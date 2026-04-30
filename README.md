@@ -16,5 +16,5 @@ Marketplace de materiales de construcción, maquinaria y servicios para el secto
 [Por documentar]
 
 ## Licencia
-© 2026 Diego [Apellido]. Todos los derechos reservados.
+© 2026 Diego Enrique Curmina Escalante. Todos los derechos reservados.
 Este código es propiedad privada y no puede ser copiado, modificado o distribuido sin autorización expresa.
