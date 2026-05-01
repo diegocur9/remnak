@@ -1,0 +1,95 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Tema industrial Remnak — claro */
+    --background: 0 0% 100%;
+    --foreground: 220 14% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 14% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 14% 11%;
+
+    /* Naranja constructor — color de marca */
+    --primary: 22 95% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 220 14% 18%;
+
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
+
+    --accent: 22 95% 50%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 22 95% 50%;
+
+    /* Token específico de marca */
+    --constructor: 22 95% 50%;
+    --constructor-foreground: 0 0% 100%;
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    /* Tema industrial Remnak — oscuro (gris oscuro dominante) */
+    --background: 220 14% 9%;
+    --foreground: 0 0% 98%;
+
+    --card: 220 14% 11%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 220 14% 11%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 22 95% 53%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 14% 16%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 220 14% 16%;
+    --muted-foreground: 220 9% 65%;
+
+    --accent: 22 95% 53%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 220 14% 18%;
+    --input: 220 14% 18%;
+    --ring: 22 95% 53%;
+
+    --constructor: 22 95% 53%;
+    --constructor-foreground: 0 0% 100%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings:
+      "rlig" 1,
+      "calt" 1;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
