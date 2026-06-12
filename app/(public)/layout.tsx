@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { Logo } from "@/components/shared/logo";
 import { SiteHeader } from "@/components/shared/site-header";
 
 export default function PublicLayout({
@@ -11,17 +12,25 @@ export default function PublicLayout({
     <div className="flex min-h-screen flex-col bg-canvas">
       <SiteHeader />
       <main className="flex-1">{children}</main>
-      <footer className="border-t border-border bg-canvas">
-        <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-8 text-sm text-texto-suave sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <p>© {new Date().getFullYear()} Remnak · Nada sobra.</p>
-          <nav className="flex flex-wrap gap-4">
-            <Link href="/privacidad" className="hover:text-ink">
+      <footer className="border-t border-[#EFE8DE]">
+        <div className="mx-auto flex max-w-[1180px] flex-col gap-4 px-4 py-10 sm:px-8 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <Logo size="sm" href={null} />
+            <span className="text-[13px] text-[#A1968B]">
+              · Marketplace de construcción · México
+            </span>
+          </div>
+          <div className="flex flex-wrap items-center gap-4">
+            <Link
+              href="/privacidad"
+              className="text-[13px] text-texto-suave hover:text-ink"
+            >
               Aviso de privacidad
             </Link>
-            <Link href="/buscar" className="hover:text-ink">
-              Explorar
-            </Link>
-          </nav>
+            <span className="font-mono text-[11.5px] text-[#B4A99D]">
+              LFPDPPP · CFDI 4.0 · Escrow Stripe / Mercado Pago
+            </span>
+          </div>
         </div>
       </footer>
     </div>

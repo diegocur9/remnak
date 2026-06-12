@@ -7,16 +7,20 @@
     /* ===== Remnak — tokens de marca (fijos en ambos temas) =====
        brand = #F26B2C. NO renombrar a "constructor" (colisiona con
        Object.prototype.constructor y rompe el build de Tailwind). */
-    --brand: 19 88% 56%;
+    --brand: 19 88% 56%; /* #F26B2C */
     --brand-foreground: 0 0% 100%;
 
-    --ink: 20 14% 14%; /* gris carbón del logo — texto/oscuro fijo */
-    --ink-foreground: 30 40% 98%;
+    /* Naranja apagado para texto/acentos (DESTACADOS, flete, brand text). #C2571F */
+    --brand-strong: 21 72% 44%;
+    --brand-strong-foreground: 0 0% 100%;
 
-    --night: 20 14% 8%; /* casi negro — superficies oscuras fijas */
-    --night-foreground: 30 40% 98%;
+    --ink: 20 14% 14%; /* #29231F — gris carbón del logo, texto/oscuro fijo */
+    --ink-foreground: 34 60% 98%;
 
-    --exito: 142 60% 38%;
+    --night: 20 13% 12%; /* #221D1A — superficies oscuras fijas */
+    --night-foreground: 34 60% 98%;
+
+    --exito: 146 64% 33%; /* #1F8A4C */
     --exito-foreground: 0 0% 100%;
 
     --advertencia: 38 92% 50%;
@@ -26,12 +30,12 @@
     --error-foreground: 0 0% 100%;
 
     /* ===== Superficies (cambian con el tema) ===== */
-    --canvas: 30 40% 98%; /* papel cálido */
+    --canvas: 34 60% 98%; /* #FDFAF6 — papel cálido */
     --superficie: 0 0% 100%; /* tarjeta elevada */
     --texto-suave: 20 8% 42%; /* texto secundario */
 
     /* ===== Alias shadcn/ui (mismas fuentes que arriba) ===== */
-    --background: 30 40% 98%;
+    --background: 34 60% 98%;
     --foreground: 20 14% 14%;
     --card: 0 0% 100%;
     --card-foreground: 20 14% 14%;
@@ -47,7 +51,7 @@
     --accent-foreground: 0 0% 100%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-    --success: 142 60% 38%;
+    --success: 146 64% 33%;
     --success-foreground: 0 0% 100%;
     --warning: 38 92% 50%;
     --warning-foreground: 20 14% 12%;
