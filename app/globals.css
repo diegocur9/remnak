@@ -4,93 +4,83 @@
 
 @layer base {
   :root {
-    /* ===== Remnak — tema claro (canvas cálido sobre ink) =====
-       Marca: #F26B2C = hsl(19 88% 56%) */
+    /* ===== Remnak — tokens de marca (fijos en ambos temas) =====
+       brand = #F26B2C. NO renombrar a "constructor" (colisiona con
+       Object.prototype.constructor y rompe el build de Tailwind). */
+    --brand: 19 88% 56%;
+    --brand-foreground: 0 0% 100%;
 
-    /* Canvas cálido: papel ligeramente tostado, no blanco puro. */
+    --ink: 20 14% 14%; /* gris carbón del logo — texto/oscuro fijo */
+    --ink-foreground: 30 40% 98%;
+
+    --night: 20 14% 8%; /* casi negro — superficies oscuras fijas */
+    --night-foreground: 30 40% 98%;
+
+    --exito: 142 60% 38%;
+    --exito-foreground: 0 0% 100%;
+
+    --advertencia: 38 92% 50%;
+    --advertencia-foreground: 20 14% 12%;
+
+    --error: 0 72% 51%;
+    --error-foreground: 0 0% 100%;
+
+    /* ===== Superficies (cambian con el tema) ===== */
+    --canvas: 30 40% 98%; /* papel cálido */
+    --superficie: 0 0% 100%; /* tarjeta elevada */
+    --texto-suave: 20 8% 42%; /* texto secundario */
+
+    /* ===== Alias shadcn/ui (mismas fuentes que arriba) ===== */
     --background: 30 40% 98%;
-    --foreground: 20 14% 12%;
-
+    --foreground: 20 14% 14%;
     --card: 0 0% 100%;
-    --card-foreground: 20 14% 12%;
-
+    --card-foreground: 20 14% 14%;
     --popover: 0 0% 100%;
-    --popover-foreground: 20 14% 12%;
-
-    /* Naranja constructor — color de marca (#F26B2C). */
+    --popover-foreground: 20 14% 14%;
     --primary: 19 88% 56%;
     --primary-foreground: 0 0% 100%;
-
     --secondary: 30 20% 94%;
     --secondary-foreground: 20 14% 18%;
-
     --muted: 30 16% 95%;
     --muted-foreground: 20 8% 42%;
-
     --accent: 19 88% 56%;
     --accent-foreground: 0 0% 100%;
-
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-
-    /* Estados de marketplace (verificado / pendiente). */
     --success: 142 60% 38%;
     --success-foreground: 0 0% 100%;
-
     --warning: 38 92% 50%;
     --warning-foreground: 20 14% 12%;
-
     --border: 28 18% 88%;
     --input: 28 18% 88%;
     --ring: 19 88% 56%;
-
-    /* Token específico de marca (alias semántico del primary).
-       NO usar la clave "constructor": colisiona con Object.prototype.constructor
-       en la resolución de Tailwind y rompe el build. */
-    --brand: 19 88% 56%;
-    --brand-foreground: 0 0% 100%;
 
     --radius: 0.5rem;
   }
 
   .dark {
-    /* ===== Remnak — tema oscuro (ink/negro dominante) ===== */
+    /* Solo cambian las superficies; marca/ink/night/estados se mantienen. */
+    --canvas: 20 14% 8%;
+    --superficie: 20 13% 11%;
+    --texto-suave: 30 10% 64%;
+
     --background: 20 14% 8%;
     --foreground: 30 20% 96%;
-
     --card: 20 13% 11%;
     --card-foreground: 30 20% 96%;
-
     --popover: 20 13% 11%;
     --popover-foreground: 30 20% 96%;
-
     --primary: 19 90% 58%;
     --primary-foreground: 0 0% 100%;
-
     --secondary: 20 12% 16%;
     --secondary-foreground: 30 20% 96%;
-
     --muted: 20 12% 16%;
     --muted-foreground: 30 10% 64%;
-
     --accent: 19 90% 58%;
     --accent-foreground: 0 0% 100%;
-
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 98%;
-
-    --success: 142 50% 45%;
-    --success-foreground: 0 0% 100%;
-
-    --warning: 38 92% 55%;
-    --warning-foreground: 20 14% 10%;
-
     --border: 20 12% 18%;
     --input: 20 12% 18%;
     --ring: 19 90% 58%;
-
-    --brand: 19 90% 58%;
-    --brand-foreground: 0 0% 100%;
   }
 }
 

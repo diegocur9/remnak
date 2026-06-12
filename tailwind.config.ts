@@ -67,6 +67,29 @@ const config: Config = {
           DEFAULT: "hsl(var(--brand))",
           foreground: "hsl(var(--brand-foreground))",
         },
+        ink: {
+          DEFAULT: "hsl(var(--ink))",
+          foreground: "hsl(var(--ink-foreground))",
+        },
+        night: {
+          DEFAULT: "hsl(var(--night))",
+          foreground: "hsl(var(--night-foreground))",
+        },
+        canvas: "hsl(var(--canvas))",
+        superficie: "hsl(var(--superficie))",
+        "texto-suave": "hsl(var(--texto-suave))",
+        exito: {
+          DEFAULT: "hsl(var(--exito))",
+          foreground: "hsl(var(--exito-foreground))",
+        },
+        advertencia: {
+          DEFAULT: "hsl(var(--advertencia))",
+          foreground: "hsl(var(--advertencia-foreground))",
+        },
+        error: {
+          DEFAULT: "hsl(var(--error))",
+          foreground: "hsl(var(--error-foreground))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
