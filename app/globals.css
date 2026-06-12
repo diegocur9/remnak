@@ -4,75 +4,93 @@
 
 @layer base {
   :root {
-    /* Tema industrial Remnak — claro */
-    --background: 0 0% 100%;
-    --foreground: 220 14% 11%;
+    /* ===== Remnak — tema claro (canvas cálido sobre ink) =====
+       Marca: #F26B2C = hsl(19 88% 56%) */
+
+    /* Canvas cálido: papel ligeramente tostado, no blanco puro. */
+    --background: 30 40% 98%;
+    --foreground: 20 14% 12%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 14% 11%;
+    --card-foreground: 20 14% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 14% 11%;
+    --popover-foreground: 20 14% 12%;
 
-    /* Naranja constructor — color de marca */
-    --primary: 22 95% 50%;
+    /* Naranja constructor — color de marca (#F26B2C). */
+    --primary: 19 88% 56%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 220 14% 18%;
+    --secondary: 30 20% 94%;
+    --secondary-foreground: 20 14% 18%;
 
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 9% 46%;
+    --muted: 30 16% 95%;
+    --muted-foreground: 20 8% 42%;
 
-    --accent: 22 95% 50%;
+    --accent: 19 88% 56%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 22 95% 50%;
+    /* Estados de marketplace (verificado / pendiente). */
+    --success: 142 60% 38%;
+    --success-foreground: 0 0% 100%;
 
-    /* Token específico de marca */
-    --constructor: 22 95% 50%;
-    --constructor-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 20 14% 12%;
+
+    --border: 28 18% 88%;
+    --input: 28 18% 88%;
+    --ring: 19 88% 56%;
+
+    /* Token específico de marca (alias semántico del primary).
+       NO usar la clave "constructor": colisiona con Object.prototype.constructor
+       en la resolución de Tailwind y rompe el build. */
+    --brand: 19 88% 56%;
+    --brand-foreground: 0 0% 100%;
 
     --radius: 0.5rem;
   }
 
   .dark {
-    /* Tema industrial Remnak — oscuro (gris oscuro dominante) */
-    --background: 220 14% 9%;
-    --foreground: 0 0% 98%;
+    /* ===== Remnak — tema oscuro (ink/negro dominante) ===== */
+    --background: 20 14% 8%;
+    --foreground: 30 20% 96%;
 
-    --card: 220 14% 11%;
-    --card-foreground: 0 0% 98%;
+    --card: 20 13% 11%;
+    --card-foreground: 30 20% 96%;
 
-    --popover: 220 14% 11%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 20 13% 11%;
+    --popover-foreground: 30 20% 96%;
 
-    --primary: 22 95% 53%;
+    --primary: 19 90% 58%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 14% 16%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 20 12% 16%;
+    --secondary-foreground: 30 20% 96%;
 
-    --muted: 220 14% 16%;
-    --muted-foreground: 220 9% 65%;
+    --muted: 20 12% 16%;
+    --muted-foreground: 30 10% 64%;
 
-    --accent: 22 95% 53%;
+    --accent: 19 90% 58%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 220 14% 18%;
-    --input: 220 14% 18%;
-    --ring: 22 95% 53%;
+    --success: 142 50% 45%;
+    --success-foreground: 0 0% 100%;
 
-    --constructor: 22 95% 53%;
-    --constructor-foreground: 0 0% 100%;
+    --warning: 38 92% 55%;
+    --warning-foreground: 20 14% 10%;
+
+    --border: 20 12% 18%;
+    --input: 20 12% 18%;
+    --ring: 19 90% 58%;
+
+    --brand: 19 90% 58%;
+    --brand-foreground: 0 0% 100%;
   }
 }
 
@@ -91,5 +109,9 @@
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+  /* Montos: cifras tabulares para alinear precios en columnas. */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
   }
 }

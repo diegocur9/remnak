@@ -1,14 +1,30 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Archivo_Black, Hanken_Grotesk, JetBrains_Mono } from "next/font/google";
 
 import { Providers } from "@/components/shared/providers";
 import { cn } from "@/lib/utils";
 
 import "./globals.css";
 
-const inter = Inter({
+// Display / wordmark — pesado, industrial.
+const display = Archivo_Black({
+  subsets: ["latin"],
+  weight: "400",
+  variable: "--font-display",
+  display: "swap",
+});
+
+// UI base — legible, humanista.
+const sans = Hanken_Grotesk({
   subsets: ["latin"],
   variable: "--font-sans",
+  display: "swap",
+});
+
+// Montos / datos tabulares.
+const mono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
   display: "swap",
 });
 
@@ -80,7 +96,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es-MX" suppressHydrationWarning>
-      <body className={cn("min-h-screen bg-background font-sans antialiased", inter.variable)}>
+      <body
+        className={cn(
+          "min-h-screen bg-background font-sans antialiased",
+          display.variable,
+          sans.variable,
+          mono.variable
+        )}
+      >
         <Providers>{children}</Providers>
       </body>
     </html>
