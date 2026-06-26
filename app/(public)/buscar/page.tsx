@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: "Catálogo" };
 const CATS = ["materiales", "maquinaria", "herramientas", "liquidacion", "logistica", "profesionales"];
 const CONDS = ["nuevo", "sobrante", "defectuoso"];
 const SORTS = ["relevancia", "precio-asc", "precio-desc", "recientes"];
-const MUNS = ["Campeche", "Mérida"];
+const ESTADOS = ["Campeche", "Yucatán"];
 
 export default function BuscarPage({
   searchParams,
@@ -19,7 +19,7 @@ export default function BuscarPage({
     q?: string;
     categoria?: string;
     condicion?: string;
-    mun?: string;
+    estado?: string;
     verificados?: string;
     orden?: string;
   };
@@ -32,10 +32,10 @@ export default function BuscarPage({
     cond: CONDS.includes(searchParams.condicion ?? "")
       ? (searchParams.condicion as CatalogInitial["cond"])
       : "todas",
-    municipios: (searchParams.mun ?? "")
+    estados: (searchParams.estado ?? "")
       .split(",")
-      .map((m) => m.trim())
-      .filter((m) => MUNS.includes(m)),
+      .map((e) => e.trim())
+      .filter((e) => ESTADOS.includes(e)),
     verificados: searchParams.verificados === "1",
     orden: SORTS.includes(searchParams.orden ?? "")
       ? (searchParams.orden as CatalogInitial["orden"])

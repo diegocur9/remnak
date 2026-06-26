@@ -34,7 +34,15 @@ const COND_FACETS: { key: ListingCondition | "todas"; label: string }[] = [
   { key: "defectuoso", label: "Defectuoso" },
 ];
 
-const MUNICIPIOS = ["Campeche", "Mérida"] as const;
+/** Estados del piloto. El catálogo filtra por estado del anuncio. */
+export const ESTADOS = ["Campeche", "Yucatán"] as const;
+const ESTADO_BY_ABBR: Record<string, string> = {
+  "Camp.": "Campeche",
+  "Yuc.": "Yucatán",
+};
+function estadoOf(l: SampleListing): string {
+  return ESTADO_BY_ABBR[l.est] ?? l.est;
+}
 
 const SORTS: { key: SortKey; label: string }[] = [
   { key: "relevancia", label: "Relevancia" },
@@ -47,7 +55,7 @@ export interface CatalogInitial {
   q: string;
   cat: ListingCategory | "todas";
   cond: ListingCondition | "todas";
-  municipios: string[];
+  estados: string[];
   verificados: boolean;
   orden: SortKey;
 }
@@ -57,19 +65,19 @@ export function CatalogBrowser({ initial }: { initial: CatalogInitial }) {
   const [q] = useState(initial.q);
   const [cat, setCat] = useState(initial.cat);
   const [cond, setCond] = useState(initial.cond);
-  const [municipios, setMunicipios] = useState<string[]>(initial.municipios);
+  const [estados, setEstados] = useState<string[]>(initial.estados);
   const [onlyVerified, setOnlyVerified] = useState(initial.verificados);
   const [sort, setSort] = useState<SortKey>(initial.orden);
   const [mobileFilters, setMobileFilters] = useState(false);
 
   // Mantén la URL en sincronía (compartible / marcable) sin recargar.
   function syncUrl(next: Partial<CatalogInitial>) {
-    const merged = { q, cat, cond, municipios, verificados: onlyVerified, orden: sort, ...next };
+    const merged = { q, cat, cond, estados, verificados: onlyVerified, orden: sort, ...next };
     const params = new URLSearchParams();
     if (merged.q) params.set("q", merged.q);
     if (merged.cat !== "todas") params.set("categoria", merged.cat);
     if (merged.cond !== "todas") params.set("condicion", merged.cond);
-    if (merged.municipios.length) params.set("mun", merged.municipios.join(","));
+    if (merged.estados.length) params.set("estado", merged.estados.join(","));
     if (merged.verificados) params.set("verificados", "1");
     if (merged.orden !== "relevancia") params.set("orden", merged.orden);
     const qs = params.toString();
@@ -88,7 +96,7 @@ export function CatalogBrowser({ initial }: { initial: CatalogInitial }) {
       (x) =>
         (cat === "todas" || x.cat === cat) &&
         (cond === "todas" || x.cond === cond) &&
-        (municipios.length === 0 || municipios.includes(x.mun)) &&
+        (estados.length === 0 || estados.includes(estadoOf(x))) &&
         (!onlyVerified || x.verified) &&
         (!term || x.title.toLowerCase().includes(term))
     );
@@ -96,17 +104,17 @@ export function CatalogBrowser({ initial }: { initial: CatalogInitial }) {
     else if (sort === "precio-desc") list = [...list].sort((a, b) => b.price - a.price);
     else if (sort === "recientes") list = [...list].reverse();
     return list;
-  }, [q, cat, cond, municipios, onlyVerified, sort]);
+  }, [q, cat, cond, estados, onlyVerified, sort]);
 
   const hasFilters =
-    cat !== "todas" || cond !== "todas" || municipios.length > 0 || onlyVerified;
+    cat !== "todas" || cond !== "todas" || estados.length > 0 || onlyVerified;
 
   function clearAll() {
     setCat("todas");
     setCond("todas");
-    setMunicipios([]);
+    setEstados([]);
     setOnlyVerified(false);
-    syncUrl({ cat: "todas", cond: "todas", municipios: [], verificados: false });
+    syncUrl({ cat: "todas", cond: "todas", estados: [], verificados: false });
   }
 
   function pickCat(key: ListingCategory | "todas") {
@@ -117,10 +125,10 @@ export function CatalogBrowser({ initial }: { initial: CatalogInitial }) {
     setCond(key);
     syncUrl({ cond: key });
   }
-  function toggleMun(m: string, checked: boolean) {
-    const next = checked ? [...municipios, m] : municipios.filter((x) => x !== m);
-    setMunicipios(next);
-    syncUrl({ municipios: next });
+  function toggleEstado(e: string, checked: boolean) {
+    const next = checked ? [...estados, e] : estados.filter((x) => x !== e);
+    setEstados(next);
+    syncUrl({ estados: next });
   }
   function toggleVerified() {
     const next = !onlyVerified;
@@ -206,18 +214,18 @@ export function CatalogBrowser({ initial }: { initial: CatalogInitial }) {
 
       <div>
         <div className="mb-[11px] text-xs font-extrabold uppercase tracking-[.05em] text-ink">
-          Municipio
+          Estado
         </div>
-        {MUNICIPIOS.map((m) => (
+        {ESTADOS.map((e) => (
           <label
-            key={m}
+            key={e}
             className="flex cursor-pointer items-center gap-[9px] py-[5px] text-[13.5px] text-[#5A524B]"
           >
             <Checkbox
-              checked={municipios.includes(m)}
-              onCheckedChange={(v) => toggleMun(m, v === true)}
+              checked={estados.includes(e)}
+              onCheckedChange={(v) => toggleEstado(e, v === true)}
             />
-            {m}
+            {e}
           </label>
         ))}
       </div>
