@@ -27,7 +27,7 @@ export async function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 w-full border-b border-[#EAE3DA] bg-canvas/[0.86] backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-[1280px] items-center gap-5 px-4 sm:px-[26px]">
-        <Logo size="md" withMark className="shrink-0" />
+        <Logo size="md" priority className="shrink-0" />
 
         <div className="hidden flex-1 md:block">
           <SearchBar className="max-w-[440px]" />
