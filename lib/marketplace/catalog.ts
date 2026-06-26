@@ -112,6 +112,39 @@ export function toCardView(it: SampleListing): ListingCardView {
   };
 }
 
+export type ListingActionKind =
+  | "comprar"
+  | "rentar"
+  | "ofertar"
+  | "contratar"
+  | "flete";
+
+export interface ListingAction {
+  kind: ListingActionKind;
+  /** Texto del botón principal en la ficha. */
+  cta: string;
+  /** Sustantivo para la nota de escrow ("…confirmes que recibiste {noun}"). */
+  escrowNoun: string;
+}
+
+/**
+ * CTA específico según la naturaleza del anuncio: rentar maquinaria, contratar
+ * profesionales, solicitar flete, ofertar en subasta o comprar bienes.
+ */
+export function listingAction(
+  it: Pick<SampleListing, "cat" | "priceType">
+): ListingAction {
+  if (it.cat === "profesionales")
+    return { kind: "contratar", cta: "Contratar", escrowNoun: "el servicio" };
+  if (it.cat === "logistica")
+    return { kind: "flete", cta: "Solicitar flete", escrowNoun: "el flete" };
+  if (it.priceType === "renta_diaria")
+    return { kind: "rentar", cta: "Rentar", escrowNoun: "el equipo" };
+  if (it.priceType === "subasta")
+    return { kind: "ofertar", cta: "Ofertar", escrowNoun: "el material" };
+  return { kind: "comprar", cta: "Comprar con escrow", escrowNoun: "el material" };
+}
+
 export const FEATURED_LISTINGS = SAMPLE_LISTINGS.filter((l) => l.featured);
 
 export function getSampleListing(id: string): SampleListing | undefined {

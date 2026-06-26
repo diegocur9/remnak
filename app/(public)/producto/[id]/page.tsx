@@ -11,6 +11,7 @@ import {
   CONDITION_META,
   SAMPLE_LISTINGS,
   getSampleListing,
+  listingAction,
   toCardView,
 } from "@/lib/marketplace/catalog";
 import { formatMXN } from "@/lib/utils";
@@ -43,6 +44,20 @@ export default function ProductoPage({ params }: { params: { id: string } }) {
   const catLabel = CATEGORY_LABEL[it.cat];
   const locationLabel = `${it.mun}, ${it.est}`;
   const priceSuffix = it.priceType === "renta_diaria" ? "/ día" : "";
+  const action = listingAction(it);
+
+  const escrowReceiver =
+    action.kind === "contratar"
+      ? "al profesional"
+      : action.kind === "flete"
+        ? "al transportista"
+        : "al proveedor";
+  const escrowConfirm =
+    action.kind === "contratar"
+      ? "que el servicio se completó"
+      : action.kind === "flete"
+        ? "que se realizó la entrega"
+        : `que recibiste ${action.escrowNoun}`;
 
   const specs: { k: string; v: string }[] = [
     { k: "Categoría", v: catLabel },
@@ -118,6 +133,8 @@ export default function ProductoPage({ params }: { params: { id: string } }) {
             priceSuffix={priceSuffix}
             unit={it.unit}
             locationLabel={locationLabel}
+            ctaLabel={action.cta}
+            ctaKind={action.kind}
           />
 
           <div className="flex gap-3 rounded-[14px] border border-[#F2E6D6] bg-[#FBF6EF] p-4">
@@ -129,8 +146,8 @@ export default function ProductoPage({ params }: { params: { id: string } }) {
                 Tu dinero está protegido
               </div>
               <div className="text-[12.5px] leading-[1.5] text-[#6B6259]">
-                Retenemos el pago 7 días. Se libera al proveedor solo cuando
-                confirmes que recibiste el material.
+                Retenemos el pago 7 días. Se libera {escrowReceiver} solo cuando
+                confirmes {escrowConfirm}.
               </div>
             </div>
           </div>
