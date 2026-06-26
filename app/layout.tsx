@@ -71,9 +71,6 @@ export const metadata: Metadata = {
     description:
       "Compra y vende materiales de construcción sobrantes en México con pagos seguros.",
   },
-  icons: {
-    icon: "/favicon.ico",
-  },
   robots: {
     index: true,
     follow: true,
