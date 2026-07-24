@@ -7,7 +7,7 @@ export { hasRole } from "@/lib/auth/roles";
 export type { Profile, SessionProfile } from "@/lib/auth/roles";
 
 const SESSION_PROFILE_COLUMNS =
-  "id, full_name, avatar_url, role, secondary_roles, verification_status, municipio";
+  "id, full_name, avatar_url, role, secondary_roles, verification_status, municipio, rating_avg, rating_count";
 
 /**
  * Usuario autenticado + su profile. Memoizado por request (React cache) para

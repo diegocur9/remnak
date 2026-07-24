@@ -6,10 +6,10 @@ import { Search, ShieldCheck, SlidersHorizontal, X } from "lucide-react";
 
 import { ListingCard } from "@/components/marketplace/listing-card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import {
-  SAMPLE_LISTINGS,
   toCardView,
-  type SampleListing,
+  type CatalogItem,
 } from "@/lib/marketplace/catalog";
 import { cn } from "@/lib/utils";
 import type { Database } from "@/types/database";
@@ -40,7 +40,7 @@ const ESTADO_BY_ABBR: Record<string, string> = {
   "Camp.": "Campeche",
   "Yuc.": "Yucatán",
 };
-function estadoOf(l: SampleListing): string {
+function estadoOf(l: CatalogItem): string {
   return ESTADO_BY_ABBR[l.est] ?? l.est;
 }
 
@@ -58,9 +58,18 @@ export interface CatalogInitial {
   estados: string[];
   verificados: boolean;
   orden: SortKey;
+  pmin: number | null;
+  pmax: number | null;
 }
 
-export function CatalogBrowser({ initial }: { initial: CatalogInitial }) {
+export function CatalogBrowser({
+  initial,
+  items,
+}: {
+  initial: CatalogInitial;
+  /** Anuncios activos ya filtrados por `q` en el server. */
+  items: CatalogItem[];
+}) {
   const router = useRouter();
   const [q] = useState(initial.q);
   const [cat, setCat] = useState(initial.cat);
@@ -68,11 +77,16 @@ export function CatalogBrowser({ initial }: { initial: CatalogInitial }) {
   const [estados, setEstados] = useState<string[]>(initial.estados);
   const [onlyVerified, setOnlyVerified] = useState(initial.verificados);
   const [sort, setSort] = useState<SortKey>(initial.orden);
+  const [pmin, setPmin] = useState<number | null>(initial.pmin);
+  const [pmax, setPmax] = useState<number | null>(initial.pmax);
   const [mobileFilters, setMobileFilters] = useState(false);
 
   // Mantén la URL en sincronía (compartible / marcable) sin recargar.
   function syncUrl(next: Partial<CatalogInitial>) {
-    const merged = { q, cat, cond, estados, verificados: onlyVerified, orden: sort, ...next };
+    const merged = {
+      q, cat, cond, estados, verificados: onlyVerified, orden: sort, pmin, pmax,
+      ...next,
+    };
     const params = new URLSearchParams();
     if (merged.q) params.set("q", merged.q);
     if (merged.cat !== "todas") params.set("categoria", merged.cat);
@@ -80,41 +94,46 @@ export function CatalogBrowser({ initial }: { initial: CatalogInitial }) {
     if (merged.estados.length) params.set("estado", merged.estados.join(","));
     if (merged.verificados) params.set("verificados", "1");
     if (merged.orden !== "relevancia") params.set("orden", merged.orden);
+    if (merged.pmin != null) params.set("pmin", String(merged.pmin));
+    if (merged.pmax != null) params.set("pmax", String(merged.pmax));
     const qs = params.toString();
     router.replace(qs ? `/buscar?${qs}` : "/buscar", { scroll: false });
   }
 
   const catCounts = useMemo(() => {
-    const counts: Record<string, number> = { todas: SAMPLE_LISTINGS.length };
-    for (const l of SAMPLE_LISTINGS) counts[l.cat] = (counts[l.cat] ?? 0) + 1;
+    const counts: Record<string, number> = { todas: items.length };
+    for (const l of items) counts[l.cat] = (counts[l.cat] ?? 0) + 1;
     return counts;
-  }, []);
+  }, [items]);
 
   const results = useMemo(() => {
-    const term = q.trim().toLowerCase();
-    let list = SAMPLE_LISTINGS.filter(
+    let list = items.filter(
       (x) =>
         (cat === "todas" || x.cat === cat) &&
         (cond === "todas" || x.cond === cond) &&
         (estados.length === 0 || estados.includes(estadoOf(x))) &&
         (!onlyVerified || x.verified) &&
-        (!term || x.title.toLowerCase().includes(term))
+        (pmin == null || x.price >= pmin) &&
+        (pmax == null || x.price <= pmax)
     );
     if (sort === "precio-asc") list = [...list].sort((a, b) => a.price - b.price);
     else if (sort === "precio-desc") list = [...list].sort((a, b) => b.price - a.price);
-    else if (sort === "recientes") list = [...list].reverse();
+    // "recientes" = orden del server (created_at desc); "relevancia" igual por ahora.
     return list;
-  }, [q, cat, cond, estados, onlyVerified, sort]);
+  }, [items, cat, cond, estados, onlyVerified, sort, pmin, pmax]);
 
   const hasFilters =
-    cat !== "todas" || cond !== "todas" || estados.length > 0 || onlyVerified;
+    cat !== "todas" || cond !== "todas" || estados.length > 0 || onlyVerified ||
+    pmin != null || pmax != null;
 
   function clearAll() {
     setCat("todas");
     setCond("todas");
     setEstados([]);
     setOnlyVerified(false);
-    syncUrl({ cat: "todas", cond: "todas", estados: [], verificados: false });
+    setPmin(null);
+    setPmax(null);
+    syncUrl({ cat: "todas", cond: "todas", estados: [], verificados: false, pmin: null, pmax: null });
   }
 
   function pickCat(key: ListingCategory | "todas") {
@@ -214,6 +233,45 @@ export function CatalogBrowser({ initial }: { initial: CatalogInitial }) {
 
       <div>
         <div className="mb-[11px] text-xs font-extrabold uppercase tracking-[.05em] text-ink">
+          Precio (MXN)
+        </div>
+        <div className="flex items-center gap-2">
+          <Input
+            type="number"
+            inputMode="numeric"
+            min={0}
+            placeholder="Mín"
+            aria-label="Precio mínimo"
+            value={pmin ?? ""}
+            onChange={(e) => {
+              const v = e.target.value === "" ? null : Math.max(0, Number(e.target.value));
+              setPmin(v);
+              syncUrl({ pmin: v });
+            }}
+            className="h-9 font-mono text-[13px]"
+          />
+          <span className="text-[#A89E94]">–</span>
+          <Input
+            type="number"
+            inputMode="numeric"
+            min={0}
+            placeholder="Máx"
+            aria-label="Precio máximo"
+            value={pmax ?? ""}
+            onChange={(e) => {
+              const v = e.target.value === "" ? null : Math.max(0, Number(e.target.value));
+              setPmax(v);
+              syncUrl({ pmax: v });
+            }}
+            className="h-9 font-mono text-[13px]"
+          />
+        </div>
+      </div>
+
+      <div className="h-px bg-[#F0E9E1]" />
+
+      <div>
+        <div className="mb-[11px] text-xs font-extrabold uppercase tracking-[.05em] text-ink">
           Estado
         </div>
         {ESTADOS.map((e) => (
@@ -273,7 +331,7 @@ export function CatalogBrowser({ initial }: { initial: CatalogInitial }) {
         <div className="flex items-center gap-3.5">
           <span className="text-[13.5px] text-[#8B8178]">
             <strong className="font-mono text-ink">{results.length}</strong>{" "}
-            resultados
+            resultados{q ? ` para “${q}”` : ""}
           </span>
           <div className="flex gap-0.5 rounded-[10px] bg-[#F1ECE5] p-[3px]">
             {SORTS.map((srt) => (
@@ -341,7 +399,7 @@ export function CatalogBrowser({ initial }: { initial: CatalogInitial }) {
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-[18px] sm:grid-cols-2 lg:grid-cols-3">
-              {results.map((it: SampleListing) => (
+              {results.map((it: CatalogItem) => (
                 <ListingCard key={it.id} it={toCardView(it)} />
               ))}
             </div>

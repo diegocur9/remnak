@@ -1,10 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Heart, Minus, Plus } from "lucide-react";
 import { toast } from "sonner";
 
+import { toggleFavoriteAction } from "@/app/(public)/producto/actions";
 import type { ListingActionKind } from "@/lib/marketplace/catalog";
+import { cn } from "@/lib/utils";
 
 const PENDING_MESSAGE: Record<
   ListingActionKind,
@@ -33,23 +36,50 @@ const PENDING_MESSAGE: Record<
 };
 
 export function ProductPurchasePanel({
+  listingId,
   priceMain,
   priceSuffix,
   unit,
   locationLabel,
   ctaLabel,
   ctaKind,
+  initialSaved,
+  isAuthed,
 }: {
+  listingId: string;
   priceMain: string;
   priceSuffix: string;
   unit: string;
   locationLabel: string;
   ctaLabel: string;
   ctaKind: ListingActionKind;
+  initialSaved: boolean;
+  isAuthed: boolean;
 }) {
+  const router = useRouter();
   const [qty, setQty] = useState(1);
+  const [saved, setSaved] = useState(initialSaved);
+  const [isPending, startTransition] = useTransition();
   // Servicios y fletes se cotizan por unidad, no por cantidad.
   const showQty = ctaKind === "comprar" || ctaKind === "rentar";
+
+  function toggleSaved() {
+    if (!isAuthed) {
+      router.push(`/login?redirect=/producto/${listingId}`);
+      return;
+    }
+    startTransition(async () => {
+      const result = await toggleFavoriteAction(listingId);
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
+      setSaved(result.saved === true);
+      toast.success(
+        result.saved ? "Guardado en tus favoritos" : "Quitado de guardados"
+      );
+    });
+  }
 
   return (
     <div className="rounded-[18px] border border-[#ECE4DB] bg-white p-[22px] shadow-[0_12px_30px_rgba(41,35,31,.07)]">
@@ -106,11 +136,20 @@ export function ProductPurchasePanel({
       </button>
       <button
         type="button"
-        onClick={() => toast.success("Guardado en tus favoritos")}
-        className="flex h-[46px] w-full items-center justify-center gap-2 rounded-xl border-[1.5px] border-[#E6DED4] bg-white text-sm font-bold text-ink transition-colors hover:border-brand hover:text-brand-strong"
+        onClick={toggleSaved}
+        disabled={isPending}
+        className={cn(
+          "flex h-[46px] w-full items-center justify-center gap-2 rounded-xl border-[1.5px] bg-white text-sm font-bold transition-colors disabled:opacity-60",
+          saved
+            ? "border-brand text-brand-strong"
+            : "border-[#E6DED4] text-ink hover:border-brand hover:text-brand-strong"
+        )}
       >
-        <Heart className="h-[17px] w-[17px]" strokeWidth={2.1} />
-        Guardar
+        <Heart
+          className={cn("h-[17px] w-[17px]", saved && "fill-brand text-brand")}
+          strokeWidth={2.1}
+        />
+        {saved ? "Guardado" : "Guardar"}
       </button>
     </div>
   );

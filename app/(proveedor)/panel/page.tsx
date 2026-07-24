@@ -2,32 +2,21 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import {
   BadgeCheck,
+  Boxes,
   Plus,
   ShieldCheck,
   ShoppingBag,
   Star,
   TrendingUp,
-  type LucideIcon,
 } from "lucide-react";
 
-import {
-  LISTING_STATUS_META,
-  ORDER_STATUS_META,
-  SELLER_KPIS,
-  SELLER_LISTINGS,
-  SELLER_ORDERS,
-} from "@/lib/marketplace/dashboard";
+import { ListingRowActions } from "@/components/marketplace/listing-row-actions";
+import { LISTING_STATUS_META } from "@/lib/marketplace/dashboard";
+import { fetchMyListings } from "@/lib/marketplace/queries";
 import { getSessionProfile } from "@/lib/auth/profile";
 import { formatMXN } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Mi panel" };
-
-const KPI_ICONS: Record<string, LucideIcon> = {
-  TrendingUp,
-  ShoppingBag,
-  ShieldCheck,
-  Star,
-};
 
 function initials(name: string | null): string {
   const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
@@ -35,10 +24,60 @@ function initials(name: string | null): string {
 }
 
 export default async function PanelPage() {
-  const { profile } = await getSessionProfile();
+  const [{ profile }, listings] = await Promise.all([
+    getSessionProfile(),
+    fetchMyListings(),
+  ]);
   const negocio = profile?.full_name ?? "Tu negocio";
   const verificado = profile?.verification_status === "verified";
   const municipio = profile?.municipio ?? "México";
+
+  const totalViews = listings.reduce((s, l) => s + (l.views_count ?? 0), 0);
+  const totalSaves = listings.reduce((s, l) => s + (l.saves_count ?? 0), 0);
+  const activos = listings.filter((l) => l.status === "active").length;
+
+  // Ventas/escrow llegan con el flujo de órdenes (Sprint 3): hoy valores reales en cero.
+  const kpis = [
+    {
+      label: "Ventas · 30 días",
+      value: formatMXN(0),
+      delta: "aún sin órdenes",
+      deltaColor: "#8B8178",
+      icon: TrendingUp,
+      iconBg: "#FBEADF",
+      iconColor: "#F26B2C",
+    },
+    {
+      label: "Anuncios activos",
+      value: String(activos),
+      delta: `${listings.length} en total`,
+      deltaColor: "#8B8178",
+      icon: ShoppingBag,
+      iconBg: "#E6F0FA",
+      iconColor: "#2A6FB0",
+    },
+    {
+      label: "Vistas · guardados",
+      value: `${totalViews} · ${totalSaves}`,
+      delta: "todos tus anuncios",
+      deltaColor: "#8B8178",
+      icon: ShieldCheck,
+      iconBg: "#E7F4EC",
+      iconColor: "#1F8A4C",
+    },
+    {
+      label: "Calificación",
+      value:
+        profile?.rating_count && profile.rating_count > 0
+          ? String(Math.round((profile.rating_avg ?? 0) * 10) / 10)
+          : "—",
+      delta: `${profile?.rating_count ?? 0} reseñas`,
+      deltaColor: "#8B8178",
+      icon: Star,
+      iconBg: "#FBF1DA",
+      iconColor: "#F26B2C",
+    },
+  ];
 
   return (
     <div className="space-y-6">
@@ -61,7 +100,7 @@ export default async function PanelPage() {
               )}
             </div>
             <div className="text-[13px] text-[#8B8178]">
-              Proveedor · {municipio} · desde 2024
+              Proveedor · {municipio}
             </div>
           </div>
         </div>
@@ -86,134 +125,133 @@ export default async function PanelPage() {
 
       {/* KPIs */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {SELLER_KPIS.map((k) => {
-          const Icon = KPI_ICONS[k.icon] ?? TrendingUp;
-          return (
-            <div
-              key={k.label}
-              className="rounded-2xl border border-[#ECE4DB] bg-white p-[18px]"
-            >
-              <div className="mb-3 flex items-center justify-between">
-                <span className="text-[12.5px] font-semibold text-[#8B8178]">
-                  {k.label}
-                </span>
-                <span
-                  className="flex h-8 w-8 items-center justify-center rounded-[9px]"
-                  style={{ background: k.iconBg }}
-                >
-                  <Icon
-                    className="h-[17px] w-[17px]"
-                    style={{ color: k.iconColor }}
-                    strokeWidth={2.2}
-                    {...(k.icon === "Star" ? { fill: k.iconColor } : {})}
-                  />
-                </span>
-              </div>
-              <div className="font-mono text-[23px] font-bold text-ink">
-                {k.value}
-              </div>
-              <div
-                className="mt-[3px] text-xs font-semibold"
-                style={{ color: k.deltaColor }}
+        {kpis.map((k) => (
+          <div
+            key={k.label}
+            className="rounded-2xl border border-[#ECE4DB] bg-white p-[18px]"
+          >
+            <div className="mb-3 flex items-center justify-between">
+              <span className="text-[12.5px] font-semibold text-[#8B8178]">
+                {k.label}
+              </span>
+              <span
+                className="flex h-8 w-8 items-center justify-center rounded-[9px]"
+                style={{ background: k.iconBg }}
               >
-                {k.delta}
-              </div>
+                <k.icon
+                  className="h-[17px] w-[17px]"
+                  style={{ color: k.iconColor }}
+                  strokeWidth={2.2}
+                />
+              </span>
             </div>
-          );
-        })}
+            <div className="font-mono text-[23px] font-bold text-ink">
+              {k.value}
+            </div>
+            <div
+              className="mt-[3px] text-xs font-semibold"
+              style={{ color: k.deltaColor }}
+            >
+              {k.delta}
+            </div>
+          </div>
+        ))}
       </div>
 
-      {/* Anuncios + Órdenes */}
+      {/* Anuncios + lateral */}
       <div className="grid items-start gap-[22px] lg:grid-cols-[1.55fr_1fr]">
-        {/* Mis anuncios */}
+        {/* Mis anuncios (reales) */}
         <div className="overflow-hidden rounded-[18px] border border-[#ECE4DB] bg-white">
           <div className="flex items-center justify-between border-b border-[#F2ECE4] px-5 py-[18px]">
             <h2 className="font-display text-[17px] text-ink">Mis anuncios</h2>
-            <span className="text-[12.5px] font-bold text-brand-strong">
-              Ver todos
+            <span className="font-mono text-xs text-[#A1968B]">
+              {listings.length}
             </span>
           </div>
-          <div className="grid grid-cols-[1fr_96px_56px_84px] gap-2.5 border-b border-[#F2ECE4] px-5 py-[11px] text-[11px] font-bold uppercase tracking-[.04em] text-[#A1968B]">
-            <span>Anuncio</span>
-            <span>Estado</span>
-            <span className="text-right">Vistas</span>
-            <span className="text-right">Precio</span>
-          </div>
-          {SELLER_LISTINGS.map((l) => {
-            const m = LISTING_STATUS_META[l.status];
-            return (
-              <div
-                key={l.title}
-                className="grid grid-cols-[1fr_96px_56px_84px] items-center gap-2.5 border-b border-[#F6F1EA] px-5 py-3.5 last:border-b-0"
-              >
-                <div className="flex min-w-0 items-center gap-[11px]">
-                  <span className="h-[38px] w-[38px] shrink-0 rounded-[9px] bg-[repeating-linear-gradient(135deg,#EFE7DD,#EFE7DD_6px,#E7DED3_6px,#E7DED3_12px)]" />
-                  <div className="min-w-0">
-                    <div className="truncate text-[13.5px] font-bold text-ink">
-                      {l.title}
-                    </div>
-                    <div className="text-[11.5px] text-[#A1968B]">
-                      {l.cat} · {l.saves} guardados
-                    </div>
-                  </div>
-                </div>
-                <span>
-                  <span
-                    className="inline-flex rounded-[7px] px-[9px] py-[3px] text-[11.5px] font-bold"
-                    style={{ color: m?.color, background: m?.bg }}
-                  >
-                    {m?.label}
-                  </span>
-                </span>
-                <span className="text-right font-mono text-[13px] text-[#6B6259]">
-                  {l.views}
-                </span>
-                <span className="text-right font-mono text-[13px] font-bold text-ink">
-                  {formatMXN(l.price)}
-                </span>
+
+          {listings.length === 0 ? (
+            <div className="flex flex-col items-center gap-3 px-5 py-14 text-center">
+              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-brand/10 text-brand">
+                <Boxes className="h-6 w-6" />
+              </span>
+              <p className="text-sm font-semibold text-ink">
+                Aún no tienes anuncios
+              </p>
+              <p className="max-w-xs text-[13px] text-texto-suave">
+                {verificado
+                  ? "Publica tu primer material o equipo para empezar a vender."
+                  : "Podrás publicar cuando tu cuenta esté verificada."}
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-[1fr_92px_50px_84px_72px] gap-2.5 border-b border-[#F2ECE4] px-5 py-[11px] text-[11px] font-bold uppercase tracking-[.04em] text-[#A1968B]">
+                <span>Anuncio</span>
+                <span>Estado</span>
+                <span className="text-right">Vistas</span>
+                <span className="text-right">Precio</span>
+                <span />
               </div>
-            );
-          })}
+              {listings.map((l) => {
+                const m = LISTING_STATUS_META[l.status] ?? LISTING_STATUS_META.draft;
+                return (
+                  <div
+                    key={l.id}
+                    className="grid grid-cols-[1fr_92px_50px_84px_72px] items-center gap-2.5 border-b border-[#F6F1EA] px-5 py-3.5 last:border-b-0"
+                  >
+                    <div className="flex min-w-0 items-center gap-[11px]">
+                      <span
+                        className="h-[38px] w-[38px] shrink-0 rounded-[9px] bg-cover bg-center [background-image:repeating-linear-gradient(135deg,#EFE7DD,#EFE7DD_6px,#E7DED3_6px,#E7DED3_12px)]"
+                        style={
+                          l.photos[0]
+                            ? { backgroundImage: `url(${l.photos[0]})` }
+                            : undefined
+                        }
+                      />
+                      <div className="min-w-0">
+                        <Link
+                          href={`/producto/${l.id}`}
+                          className="block truncate text-[13.5px] font-bold text-ink hover:text-brand-strong"
+                        >
+                          {l.title}
+                        </Link>
+                        <div className="text-[11.5px] text-[#A1968B]">
+                          {l.saves_count ?? 0} guardados
+                        </div>
+                      </div>
+                    </div>
+                    <span>
+                      <span
+                        className="inline-flex rounded-[7px] px-[9px] py-[3px] text-[11.5px] font-bold"
+                        style={{ color: m?.color, background: m?.bg }}
+                      >
+                        {m?.label}
+                      </span>
+                    </span>
+                    <span className="text-right font-mono text-[13px] text-[#6B6259]">
+                      {l.views_count ?? 0}
+                    </span>
+                    <span className="text-right font-mono text-[13px] font-bold text-ink">
+                      {formatMXN(l.price_mxn)}
+                    </span>
+                    <ListingRowActions id={l.id} status={l.status} />
+                  </div>
+                );
+              })}
+            </>
+          )}
         </div>
 
         {/* Columna lateral */}
         <div className="flex flex-col gap-[18px]">
           <div className="rounded-[18px] border border-[#ECE4DB] bg-white p-5">
-            <h2 className="mb-4 font-display text-[17px] text-ink">
+            <h2 className="mb-3 font-display text-[17px] text-ink">
               Órdenes por atender
             </h2>
-            <div className="flex flex-col gap-3.5">
-              {SELLER_ORDERS.map((o) => {
-                const m = ORDER_STATUS_META[o.status];
-                return (
-                  <div
-                    key={o.id}
-                    className="flex flex-col gap-2 border-b border-[#F6F1EA] pb-3.5 last:border-b-0 last:pb-0"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-mono text-xs text-[#A1968B]">
-                        {o.id}
-                      </span>
-                      <span
-                        className="inline-flex rounded-[7px] px-[9px] py-[3px] text-[11px] font-bold"
-                        style={{ color: m?.color, background: m?.bg }}
-                      >
-                        {m?.label}
-                      </span>
-                    </div>
-                    <div className="text-[13.5px] font-bold text-ink">
-                      {o.item}
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-[#8B8178]">{o.buyer}</span>
-                      <span className="font-mono text-[13.5px] font-bold text-ink">
-                        {formatMXN(o.total)}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            <p className="text-[13px] leading-relaxed text-texto-suave">
+              Sin órdenes todavía. Cuando un comprador aparte tu material, la
+              orden aparecerá aquí para prepararla y coordinarla.
+            </p>
           </div>
 
           <div className="rounded-[18px] bg-night p-5 text-[#F3ECE3]">
@@ -224,9 +262,10 @@ export default async function PanelPage() {
               <span className="text-sm font-extrabold">Comisión Remnak</span>
             </div>
             <p className="text-[13px] leading-[1.55] text-[#A99E92]">
-              Cobramos <strong className="text-white">12%</strong> por venta
-              liberada. El CFDI 4.0 se emite automáticamente a tu comprador al
-              liberar el escrow.
+              Cobramos <strong className="text-white">8%</strong> por venta
+              liberada (<strong className="text-white">5%</strong> en mayoreo
+              &gt; $10,000). El CFDI 4.0 se emite automáticamente a tu comprador
+              al liberar el escrow.
             </p>
           </div>
         </div>

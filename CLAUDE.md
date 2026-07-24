@@ -19,8 +19,11 @@
 ## Qué es Remnak
 Marketplace web de materiales de construcción (sobrantes, defectuosos,
 liquidaciones, RCD), maquinaria (venta y renta por día), profesionales de
-obra y logística/fletes. Campeche y Mérida, MX. Comisión ~12%, escrow,
-CFDI 4.0, chat regulado anti-fuga.
+obra y logística/fletes. Campeche y Mérida, MX. Escrow, CFDI 4.0, chat
+regulado anti-fuga.
+COMISIÓN (ratificada 2026-07-24, guía MVP v2): 8% estándar sobre subtotal
+sin IVA; 5% mayoreo si subtotal > $10,000 MXN. Configurable (A/B 10/12/15%
+en piloto). orders.commission_pct guarda el % aplicado por orden.
 
 ## ROLES REALES (enum user_role — verificado)
 cliente | proveedor | profesional | logistica | admin
@@ -39,6 +42,13 @@ cliente | proveedor | profesional | logistica | admin
 3. Web-first responsive. React Native después.
 4. Route groups separados (cliente) y (proveedor); el (dashboard)
    genérico del scaffold se reemplaza.
+5. VERIFICACIÓN PARA PUBLICAR Y COMPRAR (2026-07-24): cuentas no
+   verificadas solo exploran. Publicar y crear órdenes exigen
+   verification_status='verified' (check server-side).
+6. ÓRDENES SIN PAGO PRIMERO (2026-07-24): el flujo de orden completo
+   (crear→confirmar→entregar→recibir, chat, reviews) se construye con
+   pago simulado/offline; Stripe/MP se montan encima en Sprint 4b sin
+   cambiar el flujo.
 
 ## Stack (NO cambiar)
 Next.js 14 App Router (NO 15) · TypeScript estricto · Tailwind 3 ·

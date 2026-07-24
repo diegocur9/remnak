@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 
 import { ClientOrders } from "@/components/marketplace/client-orders";
 import { ListingCard } from "@/components/marketplace/listing-card";
-import { SAVED_LISTING_IDS } from "@/lib/marketplace/dashboard";
-import { getSampleListing, toCardView } from "@/lib/marketplace/catalog";
+import { toCardView } from "@/lib/marketplace/catalog";
+import { fetchSavedListings } from "@/lib/marketplace/queries";
 import { getSessionProfile } from "@/lib/auth/profile";
 
 export const metadata: Metadata = { title: "Mis compras" };
@@ -13,9 +13,7 @@ export default async function CuentaPage() {
   const nombre = profile?.full_name ?? "Tu cuenta";
   const municipio = profile?.municipio ?? "México";
 
-  const saved = SAVED_LISTING_IDS.map(getSampleListing).filter(
-    (l): l is NonNullable<typeof l> => Boolean(l)
-  );
+  const saved = await fetchSavedListings();
 
   return (
     <div>

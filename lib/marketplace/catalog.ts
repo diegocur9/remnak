@@ -20,11 +20,17 @@ export interface SampleListing {
   rating: number;
   ratingCount: number;
   photoLabel: string;
+  /** URL pública real (Supabase Storage); si falta, la card usa placeholder. */
+  photoUrl?: string;
+  description?: string;
   brand?: string;
   featured?: boolean;
   flete: boolean;
   fletePrice: number;
 }
+
+/** Alias semántico: los items del catálogo real usan la misma forma. */
+export type CatalogItem = SampleListing;
 
 /**
  * Catálogo de muestra (datos realistas de construcción MX) tomado del design
@@ -88,6 +94,7 @@ export interface ListingCardView {
   ratingCount: number;
   verified: boolean;
   photoLabel: string;
+  photoUrl?: string;
   fleteLabel: string;
 }
 
@@ -108,6 +115,7 @@ export function toCardView(it: SampleListing): ListingCardView {
     ratingCount: it.ratingCount,
     verified: it.verified,
     photoLabel: it.photoLabel,
+    photoUrl: it.photoUrl,
     fleteLabel: it.flete ? "Flete disp." : "Recolección",
   };
 }

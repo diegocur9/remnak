@@ -10,13 +10,11 @@ import {
 
 import { CategoryIcon } from "@/components/marketplace/category-icon";
 import { ListingCard } from "@/components/marketplace/listing-card";
-import {
-  FEATURED_LISTINGS,
-  HOME_CATEGORIES,
-  toCardView,
-} from "@/lib/marketplace/catalog";
+import { HOME_CATEGORIES, toCardView } from "@/lib/marketplace/catalog";
+import { fetchFeatured } from "@/lib/marketplace/queries";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const featured = await fetchFeatured(4);
   return (
     <>
       {/* ===== Hero ===== */}
@@ -123,31 +121,33 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ===== Destacados ===== */}
-      <section className="mx-auto max-w-[1180px] px-6 pb-2 pt-10 lg:px-8">
-        <div className="mb-5 flex items-end justify-between">
-          <div>
-            <div className="mb-1.5 font-mono text-xs font-medium tracking-[.04em] text-brand-strong">
-              DESTACADOS
+      {/* ===== Destacados (desde DB; se oculta si aún no hay anuncios) ===== */}
+      {featured.length > 0 && (
+        <section className="mx-auto max-w-[1180px] px-6 pb-2 pt-10 lg:px-8">
+          <div className="mb-5 flex items-end justify-between">
+            <div>
+              <div className="mb-1.5 font-mono text-xs font-medium tracking-[.04em] text-brand-strong">
+                DESTACADOS
+              </div>
+              <h2 className="font-display text-[28px] tracking-[-.01em] text-ink">
+                Esta semana en la Península
+              </h2>
             </div>
-            <h2 className="font-display text-[28px] tracking-[-.01em] text-ink">
-              Esta semana en la Península
-            </h2>
+            <Link
+              href="/buscar"
+              className="inline-flex items-center gap-1.5 text-sm font-bold text-brand-strong"
+            >
+              Ver catálogo
+              <ArrowRight className="h-4 w-4" strokeWidth={2.4} />
+            </Link>
           </div>
-          <Link
-            href="/buscar"
-            className="inline-flex items-center gap-1.5 text-sm font-bold text-brand-strong"
-          >
-            Ver catálogo
-            <ArrowRight className="h-4 w-4" strokeWidth={2.4} />
-          </Link>
-        </div>
-        <div className="grid grid-cols-1 gap-[18px] sm:grid-cols-2 lg:grid-cols-4">
-          {FEATURED_LISTINGS.map((it) => (
-            <ListingCard key={it.id} it={toCardView(it)} />
-          ))}
-        </div>
-      </section>
+          <div className="grid grid-cols-1 gap-[18px] sm:grid-cols-2 lg:grid-cols-4">
+            {featured.map((it) => (
+              <ListingCard key={it.id} it={toCardView(it)} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* ===== Cómo funciona ===== */}
       <section className="mt-[54px] bg-night text-[#F3ECE3]">

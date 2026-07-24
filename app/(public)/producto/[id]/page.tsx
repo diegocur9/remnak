@@ -9,19 +9,24 @@ import { ProductPurchasePanel } from "@/components/marketplace/product-purchase-
 import {
   CATEGORY_LABEL,
   CONDITION_META,
-  SAMPLE_LISTINGS,
-  getSampleListing,
   listingAction,
   toCardView,
 } from "@/lib/marketplace/catalog";
+import {
+  fetchFavoriteIds,
+  fetchListingDetail,
+  fetchRelated,
+  incrementViews,
+} from "@/lib/marketplace/queries";
+import { getSessionProfile } from "@/lib/auth/profile";
 import { formatMXN } from "@/lib/utils";
 
-export function generateMetadata({
+export async function generateMetadata({
   params,
 }: {
   params: { id: string };
-}): Metadata {
-  const listing = getSampleListing(params.id);
+}): Promise<Metadata> {
+  const listing = await fetchListingDetail(params.id);
   return { title: listing?.title ?? "Anuncio" };
 }
 
@@ -36,9 +41,21 @@ function initials(name: string): string {
   return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase() || "RK";
 }
 
-export default function ProductoPage({ params }: { params: { id: string } }) {
-  const it = getSampleListing(params.id);
+export default async function ProductoPage({
+  params,
+}: {
+  params: { id: string };
+}) {
+  const it = await fetchListingDetail(params.id);
   if (!it) notFound();
+
+  const [related, favoriteIds, { profile }] = await Promise.all([
+    fetchRelated(it.cat, it.id),
+    fetchFavoriteIds(),
+    getSessionProfile(),
+  ]);
+  // Métrica best-effort; no bloquea el render.
+  void incrementViews(it.id);
 
   const cm = CONDITION_META[it.cond];
   const catLabel = CATEGORY_LABEL[it.cat];
@@ -63,14 +80,14 @@ export default function ProductoPage({ params }: { params: { id: string } }) {
     { k: "Categoría", v: catLabel },
     { k: "Condición", v: cm.label },
     { k: "Marca", v: it.brand ?? "—" },
+    { k: "Modelo", v: it.model ?? "—" },
     { k: "Cantidad", v: it.unit },
     { k: "Tipo de precio", v: PRICE_TYPE_LABEL[it.priceType] ?? it.priceType },
     { k: "Ubicación", v: locationLabel },
   ];
-
-  const related = SAMPLE_LISTINGS.filter(
-    (x) => x.cat === it.cat && x.id !== it.id
-  ).slice(0, 4);
+  if (it.esRcd && it.volumenM3) {
+    specs.push({ k: "Volumen RCD", v: `${it.volumenM3} m³` });
+  }
 
   return (
     <div className="mx-auto max-w-[1200px] px-4 pb-16 pt-6 sm:px-8">
@@ -79,13 +96,19 @@ export default function ProductoPage({ params }: { params: { id: string } }) {
         <Link href="/buscar" className="hover:text-ink">
           Catálogo
         </Link>{" "}
-        / {catLabel} / <span className="text-[#6B6259]">{it.id}</span>
+        / {catLabel} /{" "}
+        <span className="text-[#6B6259]">{it.id.slice(0, 8)}</span>
       </div>
 
       <div className="grid items-start gap-9 lg:grid-cols-[1fr_384px]">
         {/* Columna principal */}
         <div>
-          <ProductGallery photoLabel={it.photoLabel} catLabel={catLabel} />
+          <ProductGallery
+            photos={it.photos}
+            photoLabel={it.photoLabel}
+            catLabel={catLabel}
+            title={it.title}
+          />
 
           <div className="mt-7 flex flex-wrap items-center gap-2.5">
             <span
@@ -105,9 +128,8 @@ export default function ProductoPage({ params }: { params: { id: string } }) {
             {it.title}
           </h1>
           <p className="mb-[30px] max-w-[600px] text-[15.5px] leading-[1.6] text-[#5A524B]">
-            Material sobrante de obra en la Península. Se entrega tal cual se
-            muestra; fotos y condición verificadas por el equipo de Remnak.
-            Disponible para recolección o flete dentro de la plataforma.
+            {it.description ??
+              "Material de obra en la Península. Se entrega tal cual se muestra; disponible para recolección o flete dentro de la plataforma."}
           </p>
 
           <h2 className="mb-3.5 font-display text-[18px] text-ink">
@@ -129,12 +151,15 @@ export default function ProductoPage({ params }: { params: { id: string } }) {
         {/* Columna lateral (sticky) */}
         <div className="flex flex-col gap-4 lg:sticky lg:top-[88px]">
           <ProductPurchasePanel
+            listingId={it.id}
             priceMain={formatMXN(it.price)}
             priceSuffix={priceSuffix}
             unit={it.unit}
             locationLabel={locationLabel}
             ctaLabel={action.cta}
             ctaKind={action.kind}
+            initialSaved={favoriteIds.has(it.id)}
+            isAuthed={Boolean(profile)}
           />
 
           <div className="flex gap-3 rounded-[14px] border border-[#F2E6D6] bg-[#FBF6EF] p-4">

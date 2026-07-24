@@ -13,6 +13,8 @@ export type SessionProfile = Pick<
   | "secondary_roles"
   | "verification_status"
   | "municipio"
+  | "rating_avg"
+  | "rating_count"
 >;
 
 /**

@@ -4,6 +4,7 @@ import {
   CatalogBrowser,
   type CatalogInitial,
 } from "@/components/marketplace/catalog-browser";
+import { fetchCatalog } from "@/lib/marketplace/queries";
 
 export const metadata: Metadata = { title: "Catálogo" };
 
@@ -12,7 +13,13 @@ const CONDS = ["nuevo", "sobrante", "defectuoso"];
 const SORTS = ["relevancia", "precio-asc", "precio-desc", "recientes"];
 const ESTADOS = ["Campeche", "Yucatán"];
 
-export default function BuscarPage({
+function parsePrice(v: string | undefined): number | null {
+  if (!v) return null;
+  const n = Number(v);
+  return Number.isFinite(n) && n >= 0 ? n : null;
+}
+
+export default async function BuscarPage({
   searchParams,
 }: {
   searchParams: {
@@ -22,6 +29,8 @@ export default function BuscarPage({
     estado?: string;
     verificados?: string;
     orden?: string;
+    pmin?: string;
+    pmax?: string;
   };
 }) {
   const initial: CatalogInitial = {
@@ -40,7 +49,12 @@ export default function BuscarPage({
     orden: SORTS.includes(searchParams.orden ?? "")
       ? (searchParams.orden as CatalogInitial["orden"])
       : "relevancia",
+    pmin: parsePrice(searchParams.pmin),
+    pmax: parsePrice(searchParams.pmax),
   };
 
-  return <CatalogBrowser initial={initial} />;
+  // `q` se filtra server-side (ilike título/descripción); facetas en cliente.
+  const items = await fetchCatalog(initial.q);
+
+  return <CatalogBrowser initial={initial} items={items} />;
 }

@@ -1,7 +1,13 @@
+import Image from "next/image";
 import Link from "next/link";
 import { MapPin, Star } from "lucide-react";
 
 import type { ListingCardView } from "@/lib/marketplace/catalog";
+
+/** Solo nuestro Storage pasa por el optimizador (hosts externos: unoptimized). */
+export function isOptimizedHost(url: string): boolean {
+  return url.includes(".supabase.co/storage/");
+}
 
 /** Tarjeta de anuncio fiel al design file (ListingCard.dc.html). */
 export function ListingCard({ it }: { it: ListingCardView }) {
@@ -10,8 +16,18 @@ export function ListingCard({ it }: { it: ListingCardView }) {
       href={`/producto/${it.id}`}
       className="group flex flex-col overflow-hidden rounded-[14px] border border-[#E8E1D9] bg-white shadow-[0_1px_2px_rgba(41,35,31,0.04)] transition duration-150 hover:-translate-y-[3px] hover:border-[#E0D6CB] hover:shadow-[0_14px_30px_rgba(41,35,31,0.11)]"
     >
-      {/* Imagen (placeholder rayado) */}
+      {/* Imagen real; placeholder rayado si el anuncio no tiene fotos */}
       <div className="relative flex h-[172px] items-end bg-[repeating-linear-gradient(135deg,#F1EAE1,#F1EAE1_11px,#ECE3D8_11px,#ECE3D8_22px)] p-3">
+        {it.photoUrl && (
+          <Image
+            src={it.photoUrl}
+            alt={it.title}
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+            className="object-cover"
+            unoptimized={!isOptimizedHost(it.photoUrl)}
+          />
+        )}
         <span className="absolute left-3 top-3 inline-flex items-center rounded-full bg-white px-[9px] py-1 text-[11px] font-bold text-ink shadow-[0_1px_3px_rgba(41,35,31,.10)]">
           {it.catLabel}
         </span>
@@ -23,9 +39,11 @@ export function ListingCard({ it }: { it: ListingCardView }) {
             Verificado
           </span>
         )}
-        <span className="rounded-md bg-white/70 px-[7px] py-[3px] font-mono text-[10.5px] text-[#9A8F84]">
-          {it.photoLabel}
-        </span>
+        {!it.photoUrl && (
+          <span className="rounded-md bg-white/70 px-[7px] py-[3px] font-mono text-[10.5px] text-[#9A8F84]">
+            {it.photoLabel}
+          </span>
+        )}
       </div>
 
       {/* Cuerpo */}
