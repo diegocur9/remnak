@@ -14,6 +14,89 @@ export type Database = {
   }
   public: {
     Tables: {
+      carrier_vehicles: {
+        Row: {
+          accepts_loose_bulk: boolean
+          alias: string | null
+          capacity_kg: number
+          cargo_categories: Database["public"]["Enums"]["cargo_category"][]
+          cargo_height_m: number | null
+          cargo_length_m: number | null
+          cargo_volume_m3: number | null
+          cargo_width_m: number | null
+          carrier_id: string
+          created_at: string
+          id: string
+          permiso_sct: string | null
+          permiso_sct_vigencia: string | null
+          photos: string[]
+          placas: string
+          poliza_seguro_url: string | null
+          special_equipment: string[]
+          status: Database["public"]["Enums"]["vehicle_status"]
+          tarjeta_circulacion_url: string | null
+          updated_at: string
+          vehicle_type: Database["public"]["Enums"]["vehicle_type"]
+          verified_at: string | null
+        }
+        Insert: {
+          accepts_loose_bulk?: boolean
+          alias?: string | null
+          capacity_kg: number
+          cargo_categories?: Database["public"]["Enums"]["cargo_category"][]
+          cargo_height_m?: number | null
+          cargo_length_m?: number | null
+          cargo_volume_m3?: number | null
+          cargo_width_m?: number | null
+          carrier_id: string
+          created_at?: string
+          id?: string
+          permiso_sct?: string | null
+          permiso_sct_vigencia?: string | null
+          photos?: string[]
+          placas: string
+          poliza_seguro_url?: string | null
+          special_equipment?: string[]
+          status?: Database["public"]["Enums"]["vehicle_status"]
+          tarjeta_circulacion_url?: string | null
+          updated_at?: string
+          vehicle_type: Database["public"]["Enums"]["vehicle_type"]
+          verified_at?: string | null
+        }
+        Update: {
+          accepts_loose_bulk?: boolean
+          alias?: string | null
+          capacity_kg?: number
+          cargo_categories?: Database["public"]["Enums"]["cargo_category"][]
+          cargo_height_m?: number | null
+          cargo_length_m?: number | null
+          cargo_volume_m3?: number | null
+          cargo_width_m?: number | null
+          carrier_id?: string
+          created_at?: string
+          id?: string
+          permiso_sct?: string | null
+          permiso_sct_vigencia?: string | null
+          photos?: string[]
+          placas?: string
+          poliza_seguro_url?: string | null
+          special_equipment?: string[]
+          status?: Database["public"]["Enums"]["vehicle_status"]
+          tarjeta_circulacion_url?: string | null
+          updated_at?: string
+          vehicle_type?: Database["public"]["Enums"]["vehicle_type"]
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "carrier_vehicles_carrier_id_fkey"
+            columns: ["carrier_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       disputes: {
         Row: {
           assigned_to: string | null
@@ -207,6 +290,8 @@ export type Database = {
           auction_end_at: string | null
           auction_min_bid: number | null
           brand: string | null
+          cargo_category: Database["public"]["Enums"]["cargo_category"] | null
+          cargo_volume_m3: number | null
           category: Database["public"]["Enums"]["listing_category"]
           condition: Database["public"]["Enums"]["listing_condition"]
           cp: string | null
@@ -231,6 +316,7 @@ export type Database = {
           price_mxn: number
           price_type: Database["public"]["Enums"]["listing_price_type"]
           quantity: number
+          requires_equipment: string[]
           saves_count: number | null
           serial_number: string | null
           status: Database["public"]["Enums"]["listing_status"]
@@ -243,11 +329,14 @@ export type Database = {
           video_url: string | null
           views_count: number | null
           volumen_m3: number | null
+          weight_kg: number | null
         }
         Insert: {
           auction_end_at?: string | null
           auction_min_bid?: number | null
           brand?: string | null
+          cargo_category?: Database["public"]["Enums"]["cargo_category"] | null
+          cargo_volume_m3?: number | null
           category: Database["public"]["Enums"]["listing_category"]
           condition: Database["public"]["Enums"]["listing_condition"]
           cp?: string | null
@@ -272,6 +361,7 @@ export type Database = {
           price_mxn: number
           price_type?: Database["public"]["Enums"]["listing_price_type"]
           quantity?: number
+          requires_equipment?: string[]
           saves_count?: number | null
           serial_number?: string | null
           status?: Database["public"]["Enums"]["listing_status"]
@@ -284,11 +374,14 @@ export type Database = {
           video_url?: string | null
           views_count?: number | null
           volumen_m3?: number | null
+          weight_kg?: number | null
         }
         Update: {
           auction_end_at?: string | null
           auction_min_bid?: number | null
           brand?: string | null
+          cargo_category?: Database["public"]["Enums"]["cargo_category"] | null
+          cargo_volume_m3?: number | null
           category?: Database["public"]["Enums"]["listing_category"]
           condition?: Database["public"]["Enums"]["listing_condition"]
           cp?: string | null
@@ -313,6 +406,7 @@ export type Database = {
           price_mxn?: number
           price_type?: Database["public"]["Enums"]["listing_price_type"]
           quantity?: number
+          requires_equipment?: string[]
           saves_count?: number | null
           serial_number?: string | null
           status?: Database["public"]["Enums"]["listing_status"]
@@ -325,6 +419,7 @@ export type Database = {
           video_url?: string | null
           views_count?: number | null
           volumen_m3?: number | null
+          weight_kg?: number | null
         }
         Relationships: [
           {
@@ -768,6 +863,15 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      cargo_category:
+        | "granel"
+        | "paletizado"
+        | "largo_rigido"
+        | "fragil_plano"
+        | "voluminoso_pesado"
+        | "vehiculo_estructura"
+        | "ligero_pequeno"
+        | "sanitarios_fragil"
       dispute_status: "open" | "under_review" | "resolved" | "escalated"
       freight_status:
         | "pending"
@@ -804,6 +908,16 @@ export type Database = {
         | "cancelled"
       payment_provider: "mercadopago" | "stripe"
       user_role: "cliente" | "proveedor" | "profesional" | "logistica" | "admin"
+      vehicle_status: "pending" | "verified" | "rejected" | "inactive"
+      vehicle_type:
+        | "moto"
+        | "pickup"
+        | "redilas"
+        | "volquete"
+        | "caja"
+        | "plataforma"
+        | "grua"
+        | "vidrio"
       verification_status: "pending" | "verified" | "rejected"
     }
     CompositeTypes: {
@@ -932,6 +1046,16 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      cargo_category: [
+        "granel",
+        "paletizado",
+        "largo_rigido",
+        "fragil_plano",
+        "voluminoso_pesado",
+        "vehiculo_estructura",
+        "ligero_pequeno",
+        "sanitarios_fragil",
+      ],
       dispute_status: ["open", "under_review", "resolved", "escalated"],
       freight_status: [
         "pending",
@@ -972,6 +1096,17 @@ export const Constants = {
       ],
       payment_provider: ["mercadopago", "stripe"],
       user_role: ["cliente", "proveedor", "profesional", "logistica", "admin"],
+      vehicle_status: ["pending", "verified", "rejected", "inactive"],
+      vehicle_type: [
+        "moto",
+        "pickup",
+        "redilas",
+        "volquete",
+        "caja",
+        "plataforma",
+        "grua",
+        "vidrio",
+      ],
       verification_status: ["pending", "verified", "rejected"],
     },
   },
