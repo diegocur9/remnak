@@ -105,23 +105,32 @@ async function ensureSeller(slug, meta) {
     // Asegura la contraseña conocida para poder iniciar sesión.
     await admin.auth.admin.updateUserById(user.id, { password: SEED_PASSWORD });
   }
-  // El trigger on_auth_user_created ya creó el profile; lo completamos como
-  // el propio usuario (RLS authenticated).
-  const authed = await clientAs(email);
-  const { error: pErr } = await authed
+  // El trigger on_auth_user_created ya creó el profile; lo completamos.
+  const profilePatch = {
+    full_name: meta.name,
+    role: "proveedor",
+    municipio: meta.mun,
+    estado: meta.est,
+    verification_status: meta.verified ? "verified" : "pending",
+    verified_at: meta.verified ? new Date().toISOString() : null,
+    rating_avg: meta.rating,
+    rating_count: meta.ratingCount,
+  };
+  // Preferimos service_role (tras los GRANTs salta el trigger de protección
+  // de columnas sensibles); si aún no hay GRANTs (42501), vía authenticated.
+  const { error: adminErr } = await admin
     .from("profiles")
-    .update({
-      full_name: meta.name,
-      role: "proveedor",
-      municipio: meta.mun,
-      estado: meta.est,
-      verification_status: meta.verified ? "verified" : "pending",
-      verified_at: meta.verified ? new Date().toISOString() : null,
-      rating_avg: meta.rating,
-      rating_count: meta.ratingCount,
-    })
+    .update(profilePatch)
     .eq("id", user.id);
-  if (pErr) throw pErr;
+  const authed = await clientAs(email);
+  if (adminErr) {
+    if (adminErr.code !== "42501") throw adminErr;
+    const { error: pErr } = await authed
+      .from("profiles")
+      .update(profilePatch)
+      .eq("id", user.id);
+    if (pErr) throw pErr;
+  }
   return { userId: user.id, authed };
 }
 
@@ -184,25 +193,33 @@ async function main() {
     if (!user) {
       console.warn(`! no existe usuario con email ${email} (regístrate primero)`);
     } else {
-      // Nota: mientras la DB no tenga GRANTs para service_role, esta
-      // actualización usa un reset temporal de contraseña vía auth admin.
-      const tempPw = SEED_PASSWORD;
-      const { data: before } = await admin.auth.admin.getUserById(user.id);
-      void before;
-      await admin.auth.admin.updateUserById(user.id, { password: tempPw });
-      const authed = await clientAs(email);
-      const { error } = await authed
+      const patch = {
+        verification_status: "verified",
+        verified_at: new Date().toISOString(),
+      };
+      // Vía preferida: service_role (no toca tu contraseña).
+      const { error: adminErr } = await admin
         .from("profiles")
-        .update({
-          verification_status: "verified",
-          verified_at: new Date().toISOString(),
-        })
+        .update(patch)
         .eq("id", user.id);
-      if (error) throw error;
-      console.log(`✓ cuenta ${email} marcada como verified`);
-      console.warn(
-        `⚠ tu contraseña se cambió temporalmente a "${tempPw}" para poder aplicar el cambio — cámbiala al entrar o usa /forgot-password.`
-      );
+      if (!adminErr) {
+        console.log(`✓ cuenta ${email} marcada como verified`);
+      } else if (adminErr.code === "42501") {
+        // Sin GRANTs todavía: fallback authenticated (resetea contraseña).
+        await admin.auth.admin.updateUserById(user.id, { password: SEED_PASSWORD });
+        const authed = await clientAs(email);
+        const { error } = await authed.from("profiles").update(patch).eq("id", user.id);
+        if (error) throw error;
+        console.log(`✓ cuenta ${email} marcada como verified`);
+        console.warn(
+          `⚠ tu contraseña se cambió temporalmente a "${SEED_PASSWORD}" — cámbiala al entrar o usa /forgot-password.`
+        );
+        console.warn(
+          "⚠ nota: si ya corriste el SQL de protección, este fallback dejará de funcionar (correcto): usa la vía service_role corriendo antes los GRANTs."
+        );
+      } else {
+        throw adminErr;
+      }
     }
   }
 
