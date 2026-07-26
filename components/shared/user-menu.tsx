@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useTransition } from "react";
-import { LayoutDashboard, LogOut, ShoppingBag, User } from "lucide-react";
+import { LayoutDashboard, LogOut, ShoppingBag, Truck, User } from "lucide-react";
 
 import { logoutAction } from "@/app/(auth)/actions";
 import { Avatar, initialsFromName } from "@/components/ui/avatar";
@@ -19,9 +19,15 @@ interface UserMenuProps {
   fullName: string | null;
   home: string;
   isProvider: boolean;
+  isLogistica?: boolean;
 }
 
-export function UserMenu({ fullName, home, isProvider }: UserMenuProps) {
+export function UserMenu({
+  fullName,
+  home,
+  isProvider,
+  isLogistica = false,
+}: UserMenuProps) {
   const [isPending, startTransition] = useTransition();
 
   return (
@@ -52,6 +58,14 @@ export function UserMenu({ fullName, home, isProvider }: UserMenuProps) {
             {isProvider ? "Mi panel" : "Mi cuenta"}
           </Link>
         </DropdownMenuItem>
+        {isLogistica && (
+          <DropdownMenuItem asChild>
+            <Link href="/logistica/vehiculos">
+              <Truck className="text-texto-suave" />
+              Mis vehículos
+            </Link>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem asChild>
           <Link href={`${home}`}>
             <User className="text-texto-suave" />

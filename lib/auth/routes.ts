@@ -4,9 +4,15 @@ import { hasRole, type SessionProfile } from "@/lib/auth/roles";
 /** Áreas autenticadas existentes hoy. */
 export const CLIENTE_HOME = "/cuenta";
 export const PROVEEDOR_HOME = "/panel";
+export const LOGISTICA_HOME = "/logistica/vehiculos";
 
 /** Prefijos protegidos → requieren sesión. */
-export const PROTECTED_PREFIXES = [CLIENTE_HOME, PROVEEDOR_HOME, "/admin"];
+export const PROTECTED_PREFIXES = [
+  CLIENTE_HOME,
+  PROVEEDOR_HOME,
+  "/logistica",
+  "/admin",
+];
 
 /** Rutas de auth desde las que se redirige a un usuario ya autenticado. */
 export const AUTH_ONLY_PREFIXES = ["/login", "/register"];

@@ -4,7 +4,7 @@ import { Plus } from "lucide-react";
 import { Logo } from "@/components/shared/logo";
 import { SearchBar } from "@/components/shared/search-bar";
 import { UserMenu } from "@/components/shared/user-menu";
-import { getSessionProfile } from "@/lib/auth/profile";
+import { getSessionProfile, hasRole } from "@/lib/auth/profile";
 import { homeForProfile, isProviderSide } from "@/lib/auth/routes";
 
 /** Botón "Vender / Publicar": fondo ink, ícono naranja (estilo design file). */
@@ -45,6 +45,7 @@ export async function SiteHeader() {
                 fullName={profile.full_name}
                 home={homeForProfile(profile)}
                 isProvider={provider}
+                isLogistica={hasRole(profile, "logistica")}
               />
             </>
           ) : (

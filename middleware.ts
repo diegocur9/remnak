@@ -48,11 +48,13 @@ export async function middleware(request: NextRequest) {
 
     const inProveedor = startsWithAny(pathname, [PROVEEDOR_HOME]);
     const inCliente = startsWithAny(pathname, [CLIENTE_HOME]);
+    const inLogistica = startsWithAny(pathname, ["/logistica"]);
 
     // Redirige siempre al home propio del usuario para no provocar bucles.
     const denied =
       (inProveedor && !isProviderSide(profile)) ||
-      (inCliente && !hasRole(profile, "cliente"));
+      (inCliente && !hasRole(profile, "cliente")) ||
+      (inLogistica && !hasRole(profile, "logistica"));
 
     if (denied) {
       const home = homeForProfile(profile);

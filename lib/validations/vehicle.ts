@@ -52,8 +52,10 @@ export const vehicleSchema = z
       .array(z.string().url("Foto inválida"))
       .min(MIN_VEHICLE_PHOTOS, "Sube al menos una foto del vehículo")
       .max(MAX_VEHICLE_PHOTOS, `Máximo ${MAX_VEHICLE_PHOTOS} fotos`),
-    tarjetaCirculacionUrl: z.string().url().optional().or(z.literal("")),
-    polizaSeguroUrl: z.string().url().optional().or(z.literal("")),
+    // Documentos en bucket PRIVADO (verification-docs): se guarda el path
+    // del objeto ({uid}/vehiculos/...), no una URL pública.
+    tarjetaCirculacionUrl: z.string().max(500).optional().or(z.literal("")),
+    polizaSeguroUrl: z.string().max(500).optional().or(z.literal("")),
     permisoSct: z
       .string()
       .max(40, "Máximo 40 caracteres")
