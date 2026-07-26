@@ -14,7 +14,8 @@ o al adoptar una spec nueva.
 | Seed dev (`scripts/seed.mjs`): 6 proveedores + 9 anuncios | ✅ |
 | DB asegurada: GRANTs service_role + trigger anti auto-verificación | ✅ (`scripts/check-db-security.mjs` 4/4) |
 | Sprint 3 — órdenes sin pago + chat regulado + reviews | ⏸️ EN PAUSA (money.ts/orders.ts/moderation.ts en working tree, compilan) |
-| **Módulo fleteros (matching por capacidad)** | 🔨 EN CURSO — Fase 1 (SQL) generado, pendiente de ejecutar |
+| **Módulo fleteros (matching por capacidad)** | ✅ Fases 1–5 completas (falta: asignación real de fletero al crear orden → depende de Sprint 3; columna de largo en listings → decisión pendiente) |
+| Storage: buckets `listing-photos` + `verification-docs` + políticas | ✅ verificado 7/7 (no existían; creados 2026-07-25) |
 | Pagos Stripe/MP + CFDI (Facturapi) + Resend | 🔒 Sprint 4b (sandbox; bloqueado hasta SAS) |
 | Panel admin + KYC upload | Pendiente (Sprint 4a) |
 
@@ -81,11 +82,16 @@ moto; el cristal no viaja en volquete.
 ### Fases y estado
 | Fase | Contenido | Estado |
 | --- | --- | --- |
-| 1 | `supabase/migrations/freight_matching.sql` (schema+RLS+GRANTs) | ✅ generado · ⏳ usuario lo ejecuta en Dashboard |
-| 2 | Regenerar types + `lib/queries/vehicles.ts` (compatibilidad+ranking) | ⏳ tras aplicar SQL |
-| 3 | `lib/actions/vehicles.ts` (CRUD, zod, guards, es-MX) | pendiente |
-| 4 | UI fletero `/logistica/vehiculos*` | pendiente |
-| 5 | Integración form de listing + reserva con flete | pendiente |
+| 1 | Schema+RLS+GRANTs (migración + limpieza del intento previo) | ✅ aplicado en DB |
+| 2 | Types regenerados + `lib/queries/vehicles.ts` (§5.1+§5.3) | ✅ validado en vivo |
+| 3 | `lib/actions/vehicles.ts` + `lib/validations/vehicle.ts` + catálogos `lib/marketplace/freight.ts` | ✅ validado en vivo |
+| 4 | UI fletero `/logistica/vehiculos*` (route group con guard) + buckets Storage creados + políticas SQL | ✅ (Storage 7/7) |
+| 5 | Form de publicar pide carga (sugerencia por título + conteo en vivo §6.2) · ficha muestra SOLO fleteros compatibles rankeados (§6.3) | ✅ E2E: granel→volquete, paletizado→redilas, rampa→sin compatibles |
+
+Cuentas semilla de fletes: `fletes-peninsula@seed.remnak.mx` (verificado,
+volquete 7t granel-suelto + redilas 3.5t). Seed backfillea perfiles de
+carga en los anuncios de muestra (revolvedora sin datos a propósito =
+estado legacy).
 
 ### Gaps detectados en la spec (resolver con el usuario)
 - **Largo del material** (§5.1 regla 4): listings no tiene columna de largo;

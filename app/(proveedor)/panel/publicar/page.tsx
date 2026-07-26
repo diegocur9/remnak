@@ -85,6 +85,11 @@ export default async function PublicarPage({
         | undefined,
       fleteDisponible: data.flete_disponible ?? false,
       fletePrecioMxn: data.flete_precio_mxn ?? undefined,
+      cargoCategory: data.cargo_category ?? undefined,
+      weightKg: data.weight_kg ?? undefined,
+      cargoVolumeM3: data.cargo_volume_m3 ?? undefined,
+      requiresEquipment:
+        (data.requires_equipment as ListingInput["requiresEquipment"]) ?? [],
       pickupDisponible: data.pickup_disponible ?? true,
       esRcd: data.es_rcd ?? false,
       volumenM3: data.volumen_m3 ?? undefined,

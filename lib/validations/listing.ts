@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { MUNICIPIOS } from "@/lib/constants";
+import { CARGO_CATEGORIES, SPECIAL_EQUIPMENT } from "@/lib/marketplace/freight";
 
 export const LISTING_CATEGORIES = [
   "materiales",
@@ -54,6 +55,15 @@ export const listingSchema = z
     municipio: z.enum(MUNICIPIOS, { message: "Selecciona el municipio" }),
     fleteDisponible: z.boolean(),
     fletePrecioMxn: z.coerce.number().min(0).max(1_000_000).optional(),
+    // Perfil de carga para matching de fleteros (obligatorio si hay flete)
+    cargoCategory: z.enum(CARGO_CATEGORIES).optional(),
+    weightKg: z.coerce
+      .number({ message: "Peso inválido" })
+      .positive("El peso debe ser mayor a 0")
+      .max(45_000, "Peso demasiado alto")
+      .optional(),
+    cargoVolumeM3: z.coerce.number().positive().max(120).optional(),
+    requiresEquipment: z.array(z.enum(SPECIAL_EQUIPMENT)).default([]),
     pickupDisponible: z.boolean(),
     esRcd: z.boolean(),
     volumenM3: z.coerce.number().positive().max(100_000).optional(),
@@ -67,6 +77,14 @@ export const listingSchema = z
   .refine((d) => !d.fleteDisponible || (d.fletePrecioMxn ?? 0) > 0, {
     message: "Indica el precio del flete",
     path: ["fletePrecioMxn"],
+  })
+  .refine((d) => !d.fleteDisponible || Boolean(d.cargoCategory), {
+    message: "Selecciona la categoría de manejo de la carga",
+    path: ["cargoCategory"],
+  })
+  .refine((d) => !d.fleteDisponible || (d.weightKg ?? 0) > 0, {
+    message: "Indica el peso estimado del envío",
+    path: ["weightKg"],
   })
   .refine((d) => !d.esRcd || (d.volumenM3 ?? 0) > 0, {
     message: "Indica el volumen en m³",

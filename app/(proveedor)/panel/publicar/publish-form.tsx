@@ -2,16 +2,23 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowLeft, ImagePlus, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 
 import {
+  countCompatibleForListing,
   createListingAction,
   updateListingAction,
 } from "@/app/(proveedor)/panel/actions";
+import {
+  CARGO_CATEGORY_OPTIONS,
+  SPECIAL_EQUIPMENT_OPTIONS,
+  cargoCategoryLabel,
+  suggestCargoCategory,
+} from "@/lib/marketplace/freight";
 import { FieldError } from "@/components/shared/auth-card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -25,6 +32,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { createClient } from "@/lib/supabase/client";
+import { cn } from "@/lib/utils";
 import { MUNICIPIOS } from "@/lib/constants";
 import { CATEGORY_LABEL, CONDITION_META } from "@/lib/marketplace/catalog";
 import type { z } from "zod";
@@ -81,6 +89,10 @@ export function PublishForm({ userId, listingId, defaults }: PublishFormProps) {
       municipio: undefined as unknown as ListingInput["municipio"],
       fleteDisponible: false,
       fletePrecioMxn: undefined,
+      cargoCategory: undefined,
+      weightKg: undefined,
+      cargoVolumeM3: undefined,
+      requiresEquipment: [],
       pickupDisponible: true,
       esRcd: false,
       volumenM3: undefined,
@@ -94,6 +106,32 @@ export function PublishForm({ userId, listingId, defaults }: PublishFormProps) {
   const fleteDisponible = watch("fleteDisponible");
   const esRcd = watch("esRcd");
   const priceType = watch("priceType");
+  const title = watch("title") as string;
+  const category = watch("category") as string | undefined;
+  const cargoCategory = watch("cargoCategory") as string | undefined;
+  const weightKg = watch("weightKg");
+  const requiresEquipment = (watch("requiresEquipment") as string[]) ?? [];
+
+  // §6.2 — sugerencia de categoría por título + conteo en vivo de fleteros
+  const suggestion = fleteDisponible
+    ? suggestCargoCategory(title ?? "", category)
+    : null;
+  const [carrierCount, setCarrierCount] = useState<number | null>(null);
+  useEffect(() => {
+    if (!fleteDisponible || !cargoCategory || !weightKg || Number(weightKg) <= 0) {
+      setCarrierCount(null);
+      return;
+    }
+    const t = setTimeout(() => {
+      void countCompatibleForListing({
+        cargoCategory,
+        weightKg: Number(weightKg),
+        requiresEquipment,
+      }).then(setCarrierCount);
+    }, 450);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fleteDisponible, cargoCategory, weightKg, JSON.stringify(requiresEquipment)]);
 
   async function handleFiles(files: FileList | null) {
     if (!files?.length) return;
@@ -423,19 +461,139 @@ export function PublishForm({ userId, listingId, defaults }: PublishFormProps) {
             Flete disponible
           </label>
           {fleteDisponible && (
-            <div className="space-y-1.5 pl-7 sm:max-w-[220px]">
-              <Label htmlFor="fletePrecioMxn">Precio del flete (MXN)</Label>
-              <Input
-                id="fletePrecioMxn"
-                type="number"
-                inputMode="decimal"
-                min={0}
-                step="0.01"
-                className="h-10 font-mono"
-                aria-invalid={!!errors.fletePrecioMxn}
-                {...register("fletePrecioMxn")}
-              />
-              <FieldError message={errors.fletePrecioMxn?.message} />
+            <div className="space-y-4 pl-7">
+              <div className="space-y-1.5 sm:max-w-[220px]">
+                <Label htmlFor="fletePrecioMxn">Precio del flete (MXN)</Label>
+                <Input
+                  id="fletePrecioMxn"
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  step="0.01"
+                  className="h-10 font-mono"
+                  aria-invalid={!!errors.fletePrecioMxn}
+                  {...register("fletePrecioMxn")}
+                />
+                <FieldError message={errors.fletePrecioMxn?.message} />
+              </div>
+
+              {/* Perfil de carga → matching de fleteros (§6.2) */}
+              <div className="space-y-1.5">
+                <Label>Categoría de manejo</Label>
+                <div className="flex flex-wrap gap-2">
+                  {CARGO_CATEGORY_OPTIONS.map((o) => {
+                    const active = cargoCategory === o.value;
+                    return (
+                      <button
+                        key={o.value}
+                        type="button"
+                        title={o.examples}
+                        onClick={() =>
+                          setValue("cargoCategory", o.value, {
+                            shouldValidate: true,
+                          })
+                        }
+                        className={cn(
+                          "rounded-full border px-3 py-1.5 text-[12.5px] font-semibold transition-colors",
+                          active
+                            ? "border-brand bg-[#FBEADF] text-brand-strong"
+                            : "border-[#E6DED4] bg-white text-[#6B6259] hover:border-[#D7CCC0]"
+                        )}
+                      >
+                        {o.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                {suggestion && suggestion !== cargoCategory && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setValue("cargoCategory", suggestion, {
+                        shouldValidate: true,
+                      })
+                    }
+                    className="text-xs font-semibold text-brand-strong hover:underline"
+                  >
+                    Sugerencia según el título: {cargoCategoryLabel(suggestion)} →
+                  </button>
+                )}
+                <FieldError message={errors.cargoCategory?.message} />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 sm:max-w-[340px]">
+                <div className="space-y-1.5">
+                  <Label htmlFor="weightKg">Peso estimado (kg)</Label>
+                  <Input
+                    id="weightKg"
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    className="h-10 font-mono"
+                    aria-invalid={!!errors.weightKg}
+                    {...register("weightKg")}
+                  />
+                  <FieldError message={errors.weightKg?.message} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="cargoVolumeM3">Volumen (m³, opc.)</Label>
+                  <Input
+                    id="cargoVolumeM3"
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    step="0.1"
+                    className="h-10 font-mono"
+                    {...register("cargoVolumeM3")}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Equipamiento que requiere el envío</Label>
+                <div className="flex flex-wrap gap-2">
+                  {SPECIAL_EQUIPMENT_OPTIONS.map((o) => {
+                    const active = requiresEquipment.includes(o.value);
+                    return (
+                      <button
+                        key={o.value}
+                        type="button"
+                        title={o.description}
+                        onClick={() =>
+                          setValue(
+                            "requiresEquipment",
+                            (active
+                              ? requiresEquipment.filter((v) => v !== o.value)
+                              : [...requiresEquipment, o.value]) as never,
+                            { shouldValidate: true }
+                          )
+                        }
+                        className={cn(
+                          "rounded-full border px-3 py-1.5 text-[12.5px] font-semibold transition-colors",
+                          active
+                            ? "border-brand bg-[#FBEADF] text-brand-strong"
+                            : "border-[#E6DED4] bg-white text-[#6B6259] hover:border-[#D7CCC0]"
+                        )}
+                      >
+                        {o.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {carrierCount != null && (
+                <p
+                  className={cn(
+                    "text-[13px] font-semibold",
+                    carrierCount > 0 ? "text-exito" : "text-advertencia"
+                  )}
+                >
+                  {carrierCount > 0
+                    ? `Hay ${carrierCount} fletero${carrierCount === 1 ? "" : "s"} que ${carrierCount === 1 ? "puede" : "pueden"} transportar esto`
+                    : "Aún no hay fleteros compatibles con esta carga — tu anuncio igual se publica"}
+                </p>
+              )}
             </div>
           )}
           <FieldError message={errors.pickupDisponible?.message} />

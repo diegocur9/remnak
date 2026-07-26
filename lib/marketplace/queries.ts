@@ -102,6 +102,13 @@ export interface ListingDetail extends CatalogItem {
   volumenM3?: number;
   vidaUtilMeses?: number;
   sellerId: string;
+  /** Perfil de carga (matching de fleteros); null = sin datos de flete. */
+  cargoCategory: Database["public"]["Enums"]["cargo_category"] | null;
+  weightKg: number | null;
+  requiresEquipment: string[];
+  lat: number | null;
+  lng: number | null;
+  pickupDisponible: boolean;
 }
 
 /** Ficha completa (listing activo + vendedor). */
@@ -126,6 +133,12 @@ export async function fetchListingDetail(
     volumenM3: row.volumen_m3 ?? undefined,
     vidaUtilMeses: row.vida_util_meses ?? undefined,
     sellerId: row.user_id,
+    cargoCategory: row.cargo_category,
+    weightKg: row.weight_kg,
+    requiresEquipment: row.requires_equipment ?? [],
+    lat: row.lat,
+    lng: row.lng,
+    pickupDisponible: row.pickup_disponible ?? false,
   };
 }
 

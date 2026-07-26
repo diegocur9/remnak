@@ -7,6 +7,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getSessionProfile } from "@/lib/auth/profile";
 import { isProviderSide } from "@/lib/auth/routes";
 import { ESTADO_POR_MUNICIPIO } from "@/lib/constants";
+import { CARGO_CATEGORIES, SPECIAL_EQUIPMENT } from "@/lib/marketplace/freight";
+import { countCompatibleCarriers } from "@/lib/queries/vehicles";
 import { listingSchema } from "@/lib/validations/listing";
 import type { Database } from "@/types/database";
 
@@ -53,6 +55,11 @@ function toRow(
     photos: values.photos,
     flete_disponible: values.fleteDisponible,
     flete_precio_mxn: values.fleteDisponible ? (values.fletePrecioMxn ?? 0) : null,
+    // Perfil de carga (matching de fleteros) — solo con flete activo
+    cargo_category: values.fleteDisponible ? (values.cargoCategory ?? null) : null,
+    weight_kg: values.fleteDisponible ? (values.weightKg ?? null) : null,
+    cargo_volume_m3: values.fleteDisponible ? (values.cargoVolumeM3 ?? null) : null,
+    requires_equipment: values.fleteDisponible ? values.requiresEquipment : [],
     pickup_disponible: values.pickupDisponible,
     es_rcd: values.esRcd,
     volumen_m3: values.esRcd ? (values.volumenM3 ?? null) : null,
@@ -107,6 +114,30 @@ export async function updateListingAction(
   revalidatePath("/buscar");
   revalidatePath(`/producto/${listingId}`);
   redirect("/panel?updated=1");
+}
+
+/**
+ * Conteo en vivo para el form de publicar (§6.2): "Hay N fleteros que
+ * pueden transportar esto". Sin ranking (lat/lng nulos): solo cuenta.
+ */
+export async function countCompatibleForListing(input: {
+  cargoCategory: string;
+  weightKg: number;
+  requiresEquipment: string[];
+}): Promise<number> {
+  const cat = CARGO_CATEGORIES.find((c) => c === input.cargoCategory);
+  const weight = Number(input.weightKg);
+  if (!cat || !Number.isFinite(weight) || weight <= 0) return 0;
+  const equipment = (input.requiresEquipment ?? []).filter((e) =>
+    (SPECIAL_EQUIPMENT as readonly string[]).includes(e)
+  );
+  return countCompatibleCarriers({
+    cargoCategory: cat,
+    weightKg: weight,
+    requiresEquipment: equipment,
+    lat: null,
+    lng: null,
+  });
 }
 
 export async function setListingStatusAction(

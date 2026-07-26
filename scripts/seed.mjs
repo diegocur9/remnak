@@ -63,6 +63,21 @@ const SELLERS = {
   "ecoescombros": { name: "EcoEscombros", mun: "Mérida", est: "Yucatán", verified: false, rating: 4.2, ratingCount: 8 },
 };
 
+/**
+ * Perfil de carga por anuncio (módulo de fleteros). Claves = título.
+ * Revolvedora se omite a propósito: flete sin datos de carga (estado legacy).
+ */
+const CARGO_PROFILES = {
+  "Cemento CPC 30R — 38 sacos sobrantes": { cargo_category: "paletizado", weight_kg: 1900 },
+  'Varilla 3/8" corrugada — 1.2 toneladas': { cargo_category: "largo_rigido", weight_kg: 1200 },
+  "Minicargador Bobcat S70 — renta por día": { cargo_category: "voluminoso_pesado", weight_kg: 1300, requires_equipment: ["rampa"] },
+  "Block hueco 15×20×40 — 600 pzas": { cargo_category: "paletizado", weight_kg: 3400 },
+  "Lámina galvanizada R101 — defectuosa cal. B": { cargo_category: "paletizado", weight_kg: 400 },
+  "Tinaco Rotoplas 1100 L — sobrante nuevo": { cargo_category: "sanitarios_fragil", weight_kg: 30 },
+  "Andamio tubular módulo 1.5 m — renta": { cargo_category: "largo_rigido", weight_kg: 800 },
+  "Agregado reciclado RCD — 18 m³": { cargo_category: "granel", weight_kg: 6500, cargo_volume_m3: 18 },
+};
+
 /** Anuncios de muestra (mismos datos del design file). */
 const LISTINGS = [
   { seller: "materiales-del-mayab", title: "Cemento CPC 30R — 38 sacos sobrantes", category: "materiales", condition: "sobrante", price_type: "fijo", price_mxn: 3040, quantity: 38, unit: "lote · 38 sacos", brand: "Cemex", featured: true, flete: true, flete_mxn: 480, views: 214, saves: 18, description: "Sobrante de obra terminada. Sacos íntegros, almacenados en seco. Entrega en Mérida o flete dentro de la plataforma." },
@@ -186,6 +201,24 @@ async function main() {
     inserted++;
     console.log(`+ anuncio: ${l.title}`);
   }
+
+  // Backfill de perfiles de carga (matching de fleteros) — idempotente.
+  let backfilled = 0;
+  for (const [title, cargo] of Object.entries(CARGO_PROFILES)) {
+    const { data, error } = await admin
+      .from("listings")
+      .update({
+        cargo_category: cargo.cargo_category,
+        weight_kg: cargo.weight_kg,
+        cargo_volume_m3: cargo.cargo_volume_m3 ?? null,
+        requires_equipment: cargo.requires_equipment ?? [],
+      })
+      .eq("title", title)
+      .select("id");
+    if (error) throw error;
+    backfilled += (data ?? []).length;
+  }
+  console.log(`~ perfiles de carga aplicados a ${backfilled} anuncio(s)`);
 
   if (verifyArg) {
     const email = verifyArg.split("=")[1];

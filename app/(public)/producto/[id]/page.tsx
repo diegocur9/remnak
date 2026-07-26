@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BadgeCheck, MessageSquare, ShieldCheck, Star } from "lucide-react";
 
+import { FreightCarriersCard } from "@/components/marketplace/freight-carriers-card";
 import { ListingCard } from "@/components/marketplace/listing-card";
 import { ProductGallery } from "@/components/marketplace/product-gallery";
 import { ProductPurchasePanel } from "@/components/marketplace/product-purchase-panel";
@@ -18,6 +19,7 @@ import {
   fetchRelated,
   incrementViews,
 } from "@/lib/marketplace/queries";
+import { getCompatibleCarriers } from "@/lib/queries/vehicles";
 import { getSessionProfile } from "@/lib/auth/profile";
 import { formatMXN } from "@/lib/utils";
 
@@ -49,10 +51,23 @@ export default async function ProductoPage({
   const it = await fetchListingDetail(params.id);
   if (!it) notFound();
 
-  const [related, favoriteIds, { profile }] = await Promise.all([
+  // §6.3: solo fleteros compatibles, rankeados — si el anuncio declara carga.
+  const freightMatches =
+    it.flete && it.cargoCategory && it.weightKg
+      ? getCompatibleCarriers({
+          cargoCategory: it.cargoCategory,
+          weightKg: it.weightKg,
+          requiresEquipment: it.requiresEquipment,
+          lat: it.lat,
+          lng: it.lng,
+        })
+      : Promise.resolve(null);
+
+  const [related, favoriteIds, { profile }, matches] = await Promise.all([
     fetchRelated(it.cat, it.id),
     fetchFavoriteIds(),
     getSessionProfile(),
+    freightMatches,
   ]);
   // Métrica best-effort; no bloquea el render.
   void incrementViews(it.id);
@@ -161,6 +176,14 @@ export default async function ProductoPage({
             initialSaved={favoriteIds.has(it.id)}
             isAuthed={Boolean(profile)}
           />
+
+          {matches !== null && (
+            <FreightCarriersCard
+              matches={matches}
+              fletePrecioMxn={it.fletePrice}
+              pickupDisponible={it.pickupDisponible}
+            />
+          )}
 
           <div className="flex gap-3 rounded-[14px] border border-[#F2E6D6] bg-[#FBF6EF] p-4">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[#E7F4EC]">

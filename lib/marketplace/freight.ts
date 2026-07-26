@@ -96,6 +96,34 @@ export const VEHICLE_STATUS_META: Record<
   inactive: { label: "Pausado", color: "#6B6259", bg: "#F1ECE5" },
 };
 
+/** Palabras clave → categoría de manejo (sugerencia §6.2 en el form). */
+const CARGO_KEYWORDS: [CargoCategory, string[]][] = [
+  ["granel", ["grava", "arena", "tierra", "escombro", "sascab", "agregado", "granel", "rcd"]],
+  ["largo_rigido", ["varilla", "tubo", "tuberia", "tubería", "ptr", "perfil", "riel", "polin", "polín", "viga", "andamio"]],
+  ["fragil_plano", ["vidrio", "cristal", "cancel", "ventana", "espejo"]],
+  ["voluminoso_pesado", ["excavadora", "retro", "minicargador", "compactador", "rodillo", "bobcat", "maquinaria", "montacargas", "revolvedora"]],
+  ["vehiculo_estructura", ["estructura", "contenedor", "remolque", "chasis"]],
+  ["sanitarios_fragil", ["lavabo", "wc", "inodoro", "sanitario", "tinaco", "taza", "mueble de baño", "boiler"]],
+  ["ligero_pequeno", ["tornillo", "clavo", "herramienta", "taladro", "accesorio", "sellador", "brocha", "pintura"]],
+  ["paletizado", ["cemento", "block", "tabique", "mortero", "saco", "ladrillo", "adhesivo", "yeso", "lamina", "lámina", "tarima"]],
+];
+
+/**
+ * Sugiere la categoría de manejo según el título (y la categoría del
+ * listing como pista de respaldo). null si no hay señal.
+ */
+export function suggestCargoCategory(
+  title: string,
+  listingCategory?: string
+): CargoCategory | null {
+  const t = title.toLowerCase();
+  for (const [cat, words] of CARGO_KEYWORDS) {
+    if (words.some((w) => t.includes(w))) return cat;
+  }
+  if (listingCategory === "maquinaria") return "voluminoso_pesado";
+  return null;
+}
+
 export function vehicleTypeLabel(t: VehicleType): string {
   return VEHICLE_TYPE_OPTIONS.find((o) => o.value === t)?.label ?? t;
 }
