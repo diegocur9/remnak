@@ -66,6 +66,16 @@ export const listingSchema = z
       .optional(),
     cargoVolumeM3: z.coerce.number().positive().max(120).optional(),
     requiresEquipment: z.array(z.enum(SPECIAL_EQUIPMENT)).default([]),
+    // POR UNIDAD (decisión 2026-07-25): total = unidad × cantidad; el
+    // server recalcula weight_kg/cargo_volume_m3. Granel captura totales.
+    unitWeightKg: z.coerce
+      .number({ message: "Peso unitario inválido" })
+      .positive("Peso unitario inválido")
+      .max(45_000)
+      .optional(),
+    unitLengthM: z.coerce.number().positive().max(30).optional(),
+    unitWidthM: z.coerce.number().positive().max(6).optional(),
+    unitHeightM: z.coerce.number().positive().max(6).optional(),
     pickupDisponible: z.boolean(),
     esRcd: z.boolean(),
     volumenM3: z.coerce.number().positive().max(100_000).optional(),
@@ -84,10 +94,30 @@ export const listingSchema = z
     message: "Selecciona la categoría de manejo de la carga",
     path: ["cargoCategory"],
   })
-  .refine((d) => !d.fleteDisponible || (d.weightKg ?? 0) > 0, {
-    message: "Indica el peso estimado del envío",
-    path: ["weightKg"],
-  })
+  .refine(
+    // Granel: peso total directo. Resto: peso POR UNIDAD obligatorio
+    // (el total lo calcula el server como unidad × cantidad).
+    (d) =>
+      !d.fleteDisponible ||
+      (d.cargoCategory === "granel"
+        ? (d.weightKg ?? 0) > 0
+        : (d.unitWeightKg ?? 0) > 0),
+    {
+      message: "Indica el peso (total en granel; por unidad en lo demás)",
+      path: ["unitWeightKg"],
+    }
+  )
+  .refine(
+    // largo_rigido exige el largo de la pieza (regla §5.1-4).
+    (d) =>
+      !d.fleteDisponible ||
+      d.cargoCategory !== "largo_rigido" ||
+      (d.unitLengthM ?? 0) > 0,
+    {
+      message: "Indica el largo de la pieza (m) — crítico para el flete",
+      path: ["unitLengthM"],
+    }
+  )
   .refine((d) => !d.esRcd || (d.volumenM3 ?? 0) > 0, {
     message: "Indica el volumen en m³",
     path: ["volumenM3"],

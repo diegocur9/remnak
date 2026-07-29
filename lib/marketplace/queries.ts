@@ -105,7 +105,13 @@ export interface ListingDetail extends CatalogItem {
   /** Perfil de carga (matching de fleteros); null = sin datos de flete. */
   cargoCategory: Database["public"]["Enums"]["cargo_category"] | null;
   weightKg: number | null;
+  cargoVolumeM3Total: number | null;
   requiresEquipment: string[];
+  /** Datos POR UNIDAD (total = unidad × cantidad). */
+  unitWeightKg: number | null;
+  unitLengthM: number | null;
+  unitWidthM: number | null;
+  unitHeightM: number | null;
   lat: number | null;
   lng: number | null;
   pickupDisponible: boolean;
@@ -135,7 +141,12 @@ export async function fetchListingDetail(
     sellerId: row.user_id,
     cargoCategory: row.cargo_category,
     weightKg: row.weight_kg,
+    cargoVolumeM3Total: row.cargo_volume_m3,
     requiresEquipment: row.requires_equipment ?? [],
+    unitWeightKg: row.unit_weight_kg,
+    unitLengthM: row.unit_length_m,
+    unitWidthM: row.unit_width_m,
+    unitHeightM: row.unit_height_m,
     lat: row.lat,
     lng: row.lng,
     pickupDisponible: row.pickup_disponible ?? false,

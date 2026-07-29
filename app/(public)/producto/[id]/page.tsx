@@ -52,12 +52,24 @@ export default async function ProductoPage({
   if (!it) notFound();
 
   // §6.3: solo fleteros compatibles, rankeados — si el anuncio declara carga.
+  // Con datos unitarios el matching calcula unidades/viaje y nº de viajes.
   const freightMatches =
     it.flete && it.cargoCategory && it.weightKg
       ? getCompatibleCarriers({
           cargoCategory: it.cargoCategory,
           weightKg: it.weightKg,
+          totalVolumeM3: it.cargoVolumeM3Total,
           requiresEquipment: it.requiresEquipment,
+          unit:
+            it.unitWeightKg && it.unitWeightKg > 0
+              ? {
+                  unitWeightKg: it.unitWeightKg,
+                  unitLengthM: it.unitLengthM,
+                  unitWidthM: it.unitWidthM,
+                  unitHeightM: it.unitHeightM,
+                  quantity: it.quantity,
+                }
+              : null,
           lat: it.lat,
           lng: it.lng,
         })

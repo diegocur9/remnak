@@ -92,6 +92,10 @@ export function PublishForm({ userId, listingId, defaults }: PublishFormProps) {
       cargoCategory: undefined,
       weightKg: undefined,
       cargoVolumeM3: undefined,
+      unitWeightKg: undefined,
+      unitLengthM: undefined,
+      unitWidthM: undefined,
+      unitHeightM: undefined,
       requiresEquipment: [],
       pickupDisponible: true,
       esRcd: false,
@@ -110,7 +114,30 @@ export function PublishForm({ userId, listingId, defaults }: PublishFormProps) {
   const category = watch("category") as string | undefined;
   const cargoCategory = watch("cargoCategory") as string | undefined;
   const weightKg = watch("weightKg");
+  const cargoVolumeM3 = watch("cargoVolumeM3");
+  const quantity = watch("quantity");
+  const unitWeightKg = watch("unitWeightKg");
+  const unitLengthM = watch("unitLengthM");
+  const unitWidthM = watch("unitWidthM");
+  const unitHeightM = watch("unitHeightM");
   const requiresEquipment = (watch("requiresEquipment") as string[]) ?? [];
+
+  // Carga: granel captura totales; el resto declara la UNIDAD y el total
+  // se calcula unidad × cantidad (el server lo recalcula igual).
+  const isBulk = cargoCategory === "granel";
+  const qty = Math.max(1, Math.floor(Number(quantity) || 1));
+  const uW = Number(unitWeightKg) || 0;
+  const uVol =
+    Number(unitLengthM) > 0 && Number(unitWidthM) > 0 && Number(unitHeightM) > 0
+      ? Number(unitLengthM) * Number(unitWidthM) * Number(unitHeightM)
+      : null;
+  const computedTotalKg = !isBulk && uW > 0 ? Math.round(uW * qty * 100) / 100 : null;
+  const computedTotalM3 =
+    !isBulk && uVol != null ? Math.round(uVol * qty * 100) / 100 : null;
+  const effectiveWeightKg = isBulk ? Number(weightKg) || 0 : (computedTotalKg ?? 0);
+  const effectiveVolumeM3 = isBulk
+    ? Number(cargoVolumeM3) || null
+    : computedTotalM3;
 
   // §6.2 — sugerencia de categoría por título + conteo en vivo de fleteros
   const suggestion = fleteDisponible
@@ -118,20 +145,43 @@ export function PublishForm({ userId, listingId, defaults }: PublishFormProps) {
     : null;
   const [carrierCount, setCarrierCount] = useState<number | null>(null);
   useEffect(() => {
-    if (!fleteDisponible || !cargoCategory || !weightKg || Number(weightKg) <= 0) {
+    if (!fleteDisponible || !cargoCategory || effectiveWeightKg <= 0) {
       setCarrierCount(null);
       return;
     }
     const t = setTimeout(() => {
       void countCompatibleForListing({
         cargoCategory,
-        weightKg: Number(weightKg),
+        weightKg: effectiveWeightKg,
         requiresEquipment,
+        totalVolumeM3: effectiveVolumeM3,
+        unit:
+          !isBulk && uW > 0
+            ? {
+                unitWeightKg: uW,
+                unitLengthM: Number(unitLengthM) || null,
+                unitWidthM: Number(unitWidthM) || null,
+                unitHeightM: Number(unitHeightM) || null,
+                quantity: qty,
+              }
+            : null,
       }).then(setCarrierCount);
     }, 450);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fleteDisponible, cargoCategory, weightKg, JSON.stringify(requiresEquipment)]);
+  }, [
+    fleteDisponible,
+    cargoCategory,
+    effectiveWeightKg,
+    effectiveVolumeM3,
+    uW,
+    qty,
+    unitLengthM,
+    unitWidthM,
+    unitHeightM,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    JSON.stringify(requiresEquipment),
+  ]);
 
   async function handleFiles(files: FileList | null) {
     if (!files?.length) return;
@@ -521,33 +571,108 @@ export function PublishForm({ userId, listingId, defaults }: PublishFormProps) {
                 <FieldError message={errors.cargoCategory?.message} />
               </div>
 
-              <div className="grid grid-cols-2 gap-4 sm:max-w-[340px]">
-                <div className="space-y-1.5">
-                  <Label htmlFor="weightKg">Peso estimado (kg)</Label>
-                  <Input
-                    id="weightKg"
-                    type="number"
-                    inputMode="decimal"
-                    min={0}
-                    className="h-10 font-mono"
-                    aria-invalid={!!errors.weightKg}
-                    {...register("weightKg")}
-                  />
-                  <FieldError message={errors.weightKg?.message} />
+              {isBulk ? (
+                <div className="grid grid-cols-2 gap-4 sm:max-w-[340px]">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="weightKg">Peso total (kg)</Label>
+                    <Input
+                      id="weightKg"
+                      type="number"
+                      inputMode="decimal"
+                      min={0}
+                      className="h-10 font-mono"
+                      aria-invalid={!!errors.weightKg}
+                      {...register("weightKg")}
+                    />
+                    <FieldError message={errors.weightKg?.message} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="cargoVolumeM3">Volumen total (m³)</Label>
+                    <Input
+                      id="cargoVolumeM3"
+                      type="number"
+                      inputMode="decimal"
+                      min={0}
+                      step="0.1"
+                      className="h-10 font-mono"
+                      {...register("cargoVolumeM3")}
+                    />
+                  </div>
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="cargoVolumeM3">Volumen (m³, opc.)</Label>
-                  <Input
-                    id="cargoVolumeM3"
-                    type="number"
-                    inputMode="decimal"
-                    min={0}
-                    step="0.1"
-                    className="h-10 font-mono"
-                    {...register("cargoVolumeM3")}
-                  />
+              ) : (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="unitWeightKg">Peso x unidad (kg)</Label>
+                      <Input
+                        id="unitWeightKg"
+                        type="number"
+                        inputMode="decimal"
+                        min={0}
+                        step="0.01"
+                        className="h-10 font-mono"
+                        aria-invalid={!!errors.unitWeightKg}
+                        {...register("unitWeightKg")}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="unitLengthM">Largo (m)</Label>
+                      <Input
+                        id="unitLengthM"
+                        type="number"
+                        inputMode="decimal"
+                        min={0}
+                        step="0.01"
+                        className="h-10 font-mono"
+                        aria-invalid={!!errors.unitLengthM}
+                        {...register("unitLengthM")}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="unitWidthM">Ancho (m)</Label>
+                      <Input
+                        id="unitWidthM"
+                        type="number"
+                        inputMode="decimal"
+                        min={0}
+                        step="0.01"
+                        className="h-10 font-mono"
+                        {...register("unitWidthM")}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="unitHeightM">Alto (m)</Label>
+                      <Input
+                        id="unitHeightM"
+                        type="number"
+                        inputMode="decimal"
+                        min={0}
+                        step="0.01"
+                        className="h-10 font-mono"
+                        {...register("unitHeightM")}
+                      />
+                    </div>
+                  </div>
+                  <FieldError message={errors.unitWeightKg?.message} />
+                  <FieldError message={errors.unitLengthM?.message} />
+                  {computedTotalKg != null && (
+                    <p className="font-mono text-[12.5px] tabular-nums text-ink">
+                      Total calculado:{" "}
+                      <strong>
+                        {computedTotalKg.toLocaleString("es-MX")} kg
+                      </strong>
+                      {computedTotalM3 != null && (
+                        <>
+                          {" "}
+                          · <strong>{computedTotalM3.toLocaleString("es-MX")} m³</strong>
+                        </>
+                      )}{" "}
+                      ({qty} {qty === 1 ? "unidad" : "unidades"}) — con esto se
+                      calculan los viajes del flete
+                    </p>
+                  )}
                 </div>
-              </div>
+              )}
 
               <div className="space-y-1.5">
                 <Label>Equipamiento que requiere el envío</Label>

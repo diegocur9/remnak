@@ -88,6 +88,10 @@ export default async function PublicarPage({
       cargoCategory: data.cargo_category ?? undefined,
       weightKg: data.weight_kg ?? undefined,
       cargoVolumeM3: data.cargo_volume_m3 ?? undefined,
+      unitWeightKg: data.unit_weight_kg ?? undefined,
+      unitLengthM: data.unit_length_m ?? undefined,
+      unitWidthM: data.unit_width_m ?? undefined,
+      unitHeightM: data.unit_height_m ?? undefined,
       requiresEquipment:
         (data.requires_equipment as ListingInput["requiresEquipment"]) ?? [],
       pickupDisponible: data.pickup_disponible ?? true,

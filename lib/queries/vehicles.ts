@@ -1,4 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
+import {
+  MAX_TRIPS,
+  planTrips,
+  type CargoProfile,
+  type TripPlan,
+  type UnitCargo,
+} from "@/lib/marketplace/freight-calc";
 import type { Database } from "@/types/database";
 
 /**
@@ -57,16 +64,21 @@ export async function getVehicleById(id: string): Promise<VehicleRow | null> {
 
 export interface CompatibleCarriersInput {
   cargoCategory: CargoCategory;
+  /** Peso TOTAL del lote (kg). */
   weightKg: number;
   requiresEquipment: string[];
   /** Punto de recolección (ranking §5.3 por cercanía). */
   lat: number | null;
   lng: number | null;
+  /** Volumen TOTAL del lote (m³) si se conoce. */
+  totalVolumeM3?: number | null;
   /**
-   * Largo del material en metros (§5.1 regla 4, solo largo_rigido).
-   * GAP de la spec: listings aún no guarda largo — pasar cuando se capture
-   * (Fase 5); si se omite, la regla no filtra.
+   * Datos POR UNIDAD (decisión 2026-07-25): con ellos el matching calcula
+   * unidades por viaje y número de viajes (≤ MAX_TRIPS) en lugar de exigir
+   * que todo el lote quepa en un solo viaje.
    */
+  unit?: UnitCargo | null;
+  /** @deprecated usar unit.unitLengthM — se mantiene por compatibilidad. */
   cargoLengthM?: number;
 }
 
@@ -75,6 +87,8 @@ export interface CompatibleCarrier {
   carrier: CarrierLite;
   /** Distancia estimada al punto de recolección (null sin coordenadas). */
   distanceKm: number | null;
+  /** Plan de viajes preciso para ESTA carga en ESTE vehículo. */
+  tripPlan: TripPlan;
 }
 
 /** Haversine en km. */
@@ -100,21 +114,40 @@ function distanceKm(
  *
  * Compatibilidad (TODAS):
  *  1. cargoCategory ∈ vehicle.cargo_categories        (contains, GIN)
- *  2. vehicle.capacity_kg >= weightKg
+ *  2. capacidad: con datos POR UNIDAD basta poder llevar ≥1 unidad y mover
+ *     el lote en ≤ MAX_TRIPS viajes (planTrips, preciso: peso, volumen y
+ *     dimensiones con rotación); sin unidad, el lote se trata como granel
+ *     divisible en ≤ MAX_TRIPS viajes
  *  3. requiresEquipment ⊆ vehicle.special_equipment   (contains, GIN)
- *  4. largo_rigido: cargo_length_m >= cargoLengthM    (si se conoce el largo)
+ *  4. largo_rigido: la unidad debe caber en la caja (strictLength)
  *  5. vehicle verified + permiso SCT vigente (fecha futura; NULL excluido)
  *  6. carrier con rol logistica (primario o secundario) y perfil verified
  *  + granel: solo volquete, o redilas con accepts_loose_bulk (§3*)
  *
  * Ranking: rating (1 decimal) desc → cercanía asc (sin coords al final)
- * → capacity_kg asc (el vehículo MÁS PEQUEÑO que cumple gana el empate).
+ * → MENOS viajes → capacity_kg asc (el más pequeño que cumple).
  */
 export async function getCompatibleCarriers(
   input: CompatibleCarriersInput
 ): Promise<CompatibleCarrier[]> {
   const supabase = createClient();
   const today = new Date().toISOString().slice(0, 10);
+
+  // Filtro server-side de capacidad: grueso (el fino lo hace planTrips).
+  // Con unidad: capaz de cargar al menos 1 unidad. Sin unidad: capaz de
+  // mover el lote en MAX_TRIPS viajes.
+  const unit =
+    input.unit ??
+    (input.cargoLengthM
+      ? {
+          unitWeightKg: input.weightKg,
+          unitLengthM: input.cargoLengthM,
+          quantity: 1,
+        }
+      : null);
+  const minCapacity = unit
+    ? unit.unitWeightKg
+    : input.weightKg / MAX_TRIPS;
 
   let query = supabase
     .from("carrier_vehicles")
@@ -123,7 +156,7 @@ export async function getCompatibleCarriers(
     )
     .eq("status", "verified")
     .contains("cargo_categories", [input.cargoCategory])
-    .gte("capacity_kg", input.weightKg)
+    .gte("capacity_kg", minCapacity)
     .gt("permiso_sct_vigencia", today)
     .eq("carrier.verification_status", "verified")
     .or("role.eq.logistica,secondary_roles.cs.{logistica}", {
@@ -133,8 +166,8 @@ export async function getCompatibleCarriers(
   if (input.requiresEquipment.length > 0) {
     query = query.contains("special_equipment", input.requiresEquipment);
   }
-  if (input.cargoCategory === "largo_rigido" && input.cargoLengthM) {
-    query = query.gte("cargo_length_m", input.cargoLengthM);
+  if (input.cargoCategory === "largo_rigido" && unit?.unitLengthM) {
+    query = query.gte("cargo_length_m", unit.unitLengthM);
   }
 
   const { data, error } = await query;
@@ -149,8 +182,26 @@ export async function getCompatibleCarriers(
     );
   }
 
-  const ranked: CompatibleCarrier[] = rows.map((r) => {
+  const cargo: CargoProfile = {
+    totalWeightKg: input.weightKg,
+    totalVolumeM3: input.totalVolumeM3 ?? null,
+    unit,
+    isBulk: input.cargoCategory === "granel" || !unit,
+  };
+  const strictLength = input.cargoCategory === "largo_rigido";
+
+  const ranked: CompatibleCarrier[] = [];
+  for (const r of rows) {
     const { carrier, ...vehicle } = r;
+    const plan = planTrips(cargo, {
+      capacityKg: Number(vehicle.capacity_kg),
+      cargoLengthM: vehicle.cargo_length_m,
+      cargoWidthM: vehicle.cargo_width_m,
+      cargoHeightM: vehicle.cargo_height_m,
+      cargoVolumeM3: vehicle.cargo_volume_m3,
+    }, { strictLength });
+    if (!plan.fits) continue; // nunca ofrecer un vehículo que no puede
+
     const d =
       input.lat != null &&
       input.lng != null &&
@@ -158,8 +209,13 @@ export async function getCompatibleCarriers(
       carrier.lng != null
         ? distanceKm(input.lat, input.lng, carrier.lat, carrier.lng)
         : null;
-    return { vehicle: vehicle as VehicleRow, carrier, distanceKm: d };
-  });
+    ranked.push({
+      vehicle: vehicle as VehicleRow,
+      carrier,
+      distanceKm: d,
+      tripPlan: plan,
+    });
+  }
 
   ranked.sort((a, b) => {
     // 1) rating (redondeado a 1 decimal, como se muestra en UI)
@@ -170,8 +226,11 @@ export async function getCompatibleCarriers(
     const da = a.distanceKm ?? Number.POSITIVE_INFINITY;
     const db = b.distanceKm ?? Number.POSITIVE_INFINITY;
     if (da !== db) return da - db;
-    // 3) ajuste de capacidad: el más pequeño que cumple
-    return a.vehicle.capacity_kg - b.vehicle.capacity_kg;
+    // 3) eficiencia: menos viajes primero
+    if (a.tripPlan.trips !== b.tripPlan.trips)
+      return a.tripPlan.trips - b.tripPlan.trips;
+    // 4) ajuste de capacidad: el más pequeño que cumple
+    return Number(a.vehicle.capacity_kg) - Number(b.vehicle.capacity_kg);
   });
 
   return ranked;

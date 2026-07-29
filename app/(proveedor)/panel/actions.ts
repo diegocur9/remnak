@@ -8,6 +8,7 @@ import { getSessionProfile } from "@/lib/auth/profile";
 import { isProviderSide } from "@/lib/auth/routes";
 import { ESTADO_POR_MUNICIPIO } from "@/lib/constants";
 import { CARGO_CATEGORIES, SPECIAL_EQUIPMENT } from "@/lib/marketplace/freight";
+import { cargoTotals, type UnitCargo } from "@/lib/marketplace/freight-calc";
 import { countCompatibleCarriers } from "@/lib/queries/vehicles";
 import { listingSchema } from "@/lib/validations/listing";
 import type { Database } from "@/types/database";
@@ -38,6 +39,25 @@ function toRow(
   values: ReturnType<typeof listingSchema.parse>,
   userId: string
 ): ListingInsert {
+  // Totales de carga SERVER-SIDE: con datos unitarios, total = unidad ×
+  // cantidad (no se confía en el cliente); granel captura totales directos.
+  const hasUnit =
+    values.fleteDisponible &&
+    values.cargoCategory !== "granel" &&
+    (values.unitWeightKg ?? 0) > 0;
+  const unit: UnitCargo | null = hasUnit
+    ? {
+        unitWeightKg: values.unitWeightKg!,
+        unitLengthM: values.unitLengthM ?? null,
+        unitWidthM: values.unitWidthM ?? null,
+        unitHeightM: values.unitHeightM ?? null,
+        quantity: values.quantity,
+      }
+    : null;
+  const totals = unit ? cargoTotals(unit) : null;
+  const totalWeightKg = totals ? totals.totalWeightKg : (values.weightKg ?? null);
+  const totalVolumeM3 = totals?.totalVolumeM3 ?? values.cargoVolumeM3 ?? null;
+
   return {
     user_id: userId,
     title: values.title,
@@ -57,9 +77,13 @@ function toRow(
     flete_precio_mxn: values.fleteDisponible ? (values.fletePrecioMxn ?? 0) : null,
     // Perfil de carga (matching de fleteros) — solo con flete activo
     cargo_category: values.fleteDisponible ? (values.cargoCategory ?? null) : null,
-    weight_kg: values.fleteDisponible ? (values.weightKg ?? null) : null,
-    cargo_volume_m3: values.fleteDisponible ? (values.cargoVolumeM3 ?? null) : null,
+    weight_kg: values.fleteDisponible ? totalWeightKg : null,
+    cargo_volume_m3: values.fleteDisponible ? totalVolumeM3 : null,
     requires_equipment: values.fleteDisponible ? values.requiresEquipment : [],
+    unit_weight_kg: unit ? unit.unitWeightKg : null,
+    unit_length_m: unit ? (unit.unitLengthM ?? null) : null,
+    unit_width_m: unit ? (unit.unitWidthM ?? null) : null,
+    unit_height_m: unit ? (unit.unitHeightM ?? null) : null,
     pickup_disponible: values.pickupDisponible,
     es_rcd: values.esRcd,
     volumen_m3: values.esRcd ? (values.volumenM3 ?? null) : null,
@@ -124,6 +148,14 @@ export async function countCompatibleForListing(input: {
   cargoCategory: string;
   weightKg: number;
   requiresEquipment: string[];
+  totalVolumeM3?: number | null;
+  unit?: {
+    unitWeightKg: number;
+    unitLengthM?: number | null;
+    unitWidthM?: number | null;
+    unitHeightM?: number | null;
+    quantity: number;
+  } | null;
 }): Promise<number> {
   const cat = CARGO_CATEGORIES.find((c) => c === input.cargoCategory);
   const weight = Number(input.weightKg);
@@ -131,10 +163,23 @@ export async function countCompatibleForListing(input: {
   const equipment = (input.requiresEquipment ?? []).filter((e) =>
     (SPECIAL_EQUIPMENT as readonly string[]).includes(e)
   );
+  const u = input.unit;
+  const unit =
+    u && Number.isFinite(Number(u.unitWeightKg)) && Number(u.unitWeightKg) > 0
+      ? {
+          unitWeightKg: Number(u.unitWeightKg),
+          unitLengthM: u.unitLengthM ?? null,
+          unitWidthM: u.unitWidthM ?? null,
+          unitHeightM: u.unitHeightM ?? null,
+          quantity: Math.max(1, Math.floor(Number(u.quantity) || 1)),
+        }
+      : null;
   return countCompatibleCarriers({
     cargoCategory: cat,
     weightKg: weight,
     requiresEquipment: equipment,
+    totalVolumeM3: input.totalVolumeM3 ?? null,
+    unit,
     lat: null,
     lng: null,
   });

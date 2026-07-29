@@ -65,17 +65,43 @@ const SELLERS = {
 
 /**
  * Perfil de carga por anuncio (módulo de fleteros). Claves = título.
+ * POR UNIDAD cuando aplica: weight_kg total = unit_weight_kg × quantity
+ * (mismo cálculo que hace el server). Granel captura totales directos.
  * Revolvedora se omite a propósito: flete sin datos de carga (estado legacy).
  */
 const CARGO_PROFILES = {
-  "Cemento CPC 30R — 38 sacos sobrantes": { cargo_category: "paletizado", weight_kg: 1900 },
-  'Varilla 3/8" corrugada — 1.2 toneladas': { cargo_category: "largo_rigido", weight_kg: 1200 },
-  "Minicargador Bobcat S70 — renta por día": { cargo_category: "voluminoso_pesado", weight_kg: 1300, requires_equipment: ["rampa"] },
-  "Block hueco 15×20×40 — 600 pzas": { cargo_category: "paletizado", weight_kg: 3400 },
-  "Lámina galvanizada R101 — defectuosa cal. B": { cargo_category: "paletizado", weight_kg: 400 },
-  "Tinaco Rotoplas 1100 L — sobrante nuevo": { cargo_category: "sanitarios_fragil", weight_kg: 30 },
-  "Andamio tubular módulo 1.5 m — renta": { cargo_category: "largo_rigido", weight_kg: 800 },
-  "Agregado reciclado RCD — 18 m³": { cargo_category: "granel", weight_kg: 6500, cargo_volume_m3: 18 },
+  "Cemento CPC 30R — 38 sacos sobrantes": {
+    cargo_category: "paletizado", quantity: 38,
+    unit: { w: 50, l: 0.6, a: 0.4, h: 0.15 }, // saco 50 kg → total 1900
+  },
+  'Varilla 3/8" corrugada — 1.2 toneladas': {
+    cargo_category: "largo_rigido", quantity: 360, unit_label: "360 pzas · 6 m",
+    unit: { w: 3.34, l: 6.0, a: 0.01, h: 0.01 }, // varilla 6 m ≈ 3.34 kg → ~1202
+  },
+  "Minicargador Bobcat S70 — renta por día": {
+    cargo_category: "voluminoso_pesado", quantity: 1,
+    unit: { w: 1300, l: 2.7, a: 1.4, h: 1.8 },
+    requires_equipment: ["rampa"],
+  },
+  "Block hueco 15×20×40 — 600 pzas": {
+    cargo_category: "paletizado", quantity: 600,
+    unit: { w: 10, l: 0.4, a: 0.2, h: 0.15 }, // 600 × 10 kg = 6000 → 2 viajes en redilas 3.5t
+  },
+  "Lámina galvanizada R101 — defectuosa cal. B": {
+    cargo_category: "paletizado", quantity: 120,
+    unit: { w: 3.3, l: 2.44, a: 0.9, h: 0.01 },
+  },
+  "Tinaco Rotoplas 1100 L — sobrante nuevo": {
+    cargo_category: "sanitarios_fragil", quantity: 1,
+    unit: { w: 30, l: 1.1, a: 1.1, h: 1.4 },
+  },
+  "Andamio tubular módulo 1.5 m — renta": {
+    cargo_category: "largo_rigido", quantity: 20,
+    unit: { w: 40, l: 1.5, a: 0.3, h: 0.3 },
+  },
+  "Agregado reciclado RCD — 18 m³": {
+    cargo_category: "granel", weight_kg: 6500, cargo_volume_m3: 18,
+  },
 };
 
 /** Anuncios de muestra (mismos datos del design file). */
@@ -203,16 +229,33 @@ async function main() {
   }
 
   // Backfill de perfiles de carga (matching de fleteros) — idempotente.
+  // Totales = unidad × cantidad (mismo cálculo que el server en toRow).
   let backfilled = 0;
   for (const [title, cargo] of Object.entries(CARGO_PROFILES)) {
+    const u = cargo.unit ?? null;
+    const qty = cargo.quantity ?? 1;
+    const totalW = u ? Math.round(u.w * qty * 100) / 100 : (cargo.weight_kg ?? null);
+    const unitVol = u && u.l && u.a && u.h ? u.l * u.a * u.h : null;
+    const totalV = u
+      ? unitVol != null
+        ? Math.round(unitVol * qty * 100) / 100
+        : null
+      : (cargo.cargo_volume_m3 ?? null);
+    const patch = {
+      cargo_category: cargo.cargo_category,
+      weight_kg: totalW,
+      cargo_volume_m3: totalV,
+      requires_equipment: cargo.requires_equipment ?? [],
+      unit_weight_kg: u ? u.w : null,
+      unit_length_m: u ? (u.l ?? null) : null,
+      unit_width_m: u ? (u.a ?? null) : null,
+      unit_height_m: u ? (u.h ?? null) : null,
+    };
+    if (cargo.quantity != null) patch.quantity = cargo.quantity;
+    if (cargo.unit_label) patch.unit = cargo.unit_label;
     const { data, error } = await admin
       .from("listings")
-      .update({
-        cargo_category: cargo.cargo_category,
-        weight_kg: cargo.weight_kg,
-        cargo_volume_m3: cargo.cargo_volume_m3 ?? null,
-        requires_equipment: cargo.requires_equipment ?? [],
-      })
+      .update(patch)
       .eq("title", title)
       .select("id");
     if (error) throw error;

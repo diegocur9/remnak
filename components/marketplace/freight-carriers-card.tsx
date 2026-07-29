@@ -2,6 +2,7 @@ import { MapPin, Star, Truck } from "lucide-react";
 
 import { VEHICLE_TYPE_ICONS } from "@/components/marketplace/vehicle-icons";
 import { vehicleTypeLabel } from "@/lib/marketplace/freight";
+import { tripsLabel } from "@/lib/marketplace/freight-calc";
 import type { CompatibleCarrier } from "@/lib/queries/vehicles";
 import { formatMXN } from "@/lib/utils";
 
@@ -41,6 +42,7 @@ export function FreightCarriersCard({
         <div className="flex flex-col">
           {matches.slice(0, 4).map((m) => {
             const Icon = VEHICLE_TYPE_ICONS[m.vehicle.vehicle_type];
+            const multiTrip = m.tripPlan.trips > 1;
             return (
               <div
                 key={m.vehicle.id}
@@ -68,9 +70,26 @@ export function FreightCarriersCard({
                     )}
                   </div>
                 </div>
-                <span className="shrink-0 font-mono text-[11px] tabular-nums text-[#8B8178]">
-                  {Number(m.vehicle.capacity_kg).toLocaleString("es-MX")} kg
-                </span>
+                <div className="shrink-0 text-right">
+                  <div
+                    className={
+                      multiTrip
+                        ? "font-mono text-[11.5px] font-bold tabular-nums text-brand-strong"
+                        : "font-mono text-[11.5px] tabular-nums text-[#1F8A4C]"
+                    }
+                  >
+                    {tripsLabel(m.tripPlan)}
+                  </div>
+                  {multiTrip ? (
+                    <div className="font-mono text-[10.5px] tabular-nums text-[#8B8178]">
+                      ≈ {formatMXN(fletePrecioMxn * m.tripPlan.trips)}
+                    </div>
+                  ) : (
+                    <div className="font-mono text-[10.5px] tabular-nums text-[#A89E94]">
+                      {Number(m.vehicle.capacity_kg).toLocaleString("es-MX")} kg
+                    </div>
+                  )}
+                </div>
               </div>
             );
           })}

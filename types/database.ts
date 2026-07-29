@@ -323,6 +323,10 @@ export type Database = {
           tags: string[] | null
           title: string
           unit: string | null
+          unit_height_m: number | null
+          unit_length_m: number | null
+          unit_weight_kg: number | null
+          unit_width_m: number | null
           updated_at: string | null
           user_id: string
           vida_util_meses: number | null
@@ -368,6 +372,10 @@ export type Database = {
           tags?: string[] | null
           title: string
           unit?: string | null
+          unit_height_m?: number | null
+          unit_length_m?: number | null
+          unit_weight_kg?: number | null
+          unit_width_m?: number | null
           updated_at?: string | null
           user_id: string
           vida_util_meses?: number | null
@@ -413,6 +421,10 @@ export type Database = {
           tags?: string[] | null
           title?: string
           unit?: string | null
+          unit_height_m?: number | null
+          unit_length_m?: number | null
+          unit_weight_kg?: number | null
+          unit_width_m?: number | null
           updated_at?: string | null
           user_id?: string
           vida_util_meses?: number | null
