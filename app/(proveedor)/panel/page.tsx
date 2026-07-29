@@ -262,10 +262,12 @@ export default async function PanelPage() {
               <span className="text-sm font-extrabold">Comisión Remnak</span>
             </div>
             <p className="text-[13px] leading-[1.55] text-[#A99E92]">
-              Cobramos <strong className="text-white">8%</strong> por venta
-              liberada (<strong className="text-white">5%</strong> en mayoreo
-              &gt; $10,000). El CFDI 4.0 se emite automáticamente a tu comprador
-              al liberar el escrow.
+              Cobramos <strong className="text-white">10%</strong> con tarjeta o{" "}
+              <strong className="text-white">5%</strong> con SPEI por venta
+              liberada (mayoreo &gt; $10,000:{" "}
+              <strong className="text-white">8% / 4%</strong>). La diferencia es
+              el costo del procesador — no ganamos más por método. CFDI 4.0
+              automático al liberar el escrow.
             </p>
           </div>
         </div>

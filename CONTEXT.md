@@ -20,9 +20,83 @@ o al adoptar una spec nueva.
 | Panel admin + KYC upload | Pendiente (Sprint 4a) |
 
 Decisiones ratificadas recientes (además de las de CLAUDE.md):
-- Comisión 8% / 5% mayoreo >$10,000 (configurable, A/B en piloto).
+- Comisión POR MÉTODO (guía v2.2, 2026-07-29): 10% tarjeta / 5% SPEI;
+  mayoreo >$10,000: 8% / 4%. Sustituye al 8%/5% plano anterior.
+- Escrow 72h sin disputa (2026-07-29); disputa congela hasta resolverse.
 - Verificación requerida para publicar Y comprar.
-- Órdenes sin pago primero; pagos reales se montan encima (Sprint 4b).
+- Órdenes sin pago real primero; en S4-core: tarjeta = MP Checkout SANDBOX
+  y SPEI manual con comprobante (ver flujo abajo).
+
+## GUÍA v2.2 — MODELO DE NEGOCIO VIGENTE (2026-07-29)
+
+Fuente: `guidemvp/Remnak_MVP_Guide_v2.2.docx`. Sustituye a la v2 en
+comisiones, métodos de pago y roadmap. Misión: transparencia, comisiones
+bajas por diseño, "ganamos todos".
+
+### Comisiones (Fase 1 · Piloto) — regla: tarjeta = SPEI + 5 pts
+| Concepto | Tarjeta | SPEI |
+| --- | --- | --- |
+| Estándar | 10% | 5% |
+| Mayoreo > $10,000 | 8% | 4% |
+| Flete (al fletero) | 10% | 10% |
+| Instalación (S6) | 12% | 12% |
+- OXXO ELIMINADO. Métodos: tarjeta (redirect a Mercado Pago Checkout) y
+  SPEI directo a CLABE de la SAS.
+- Fase 3 sube a 12/7 con aviso de 90 días, grandfathering 12 meses a
+  fundadores, T&C versionados. Membresía PRO (créditos de destacados, NO
+  descuento de comisión) se lanza antes del incremento (Fase 2).
+- A/B del piloto: pares 8/4 · 10/5 (base) · 12/6; decidir a 60 días o 100
+  transacciones. KPI de salud: margen neto por método; alerta si take rate
+  < 3% neto sostenido.
+- Fuente en código: `lib/marketplace/money.ts` (COMMISSION_PCT,
+  FLETE_COMMISSION_PCT, INSTALACION_COMMISSION_PCT, ESCROW_HOURS=72).
+
+### Flujo SPEI (piloto — validación manual)
+1. Checkout SPEI → orden `pending` mostrando CLABE de la SAS (mandato de
+   cobranza en T&C: Remnak cobra "por cuenta y orden del vendedor").
+2. Cliente transfiere el TOTAL y sube comprobante o clave de rastreo
+   (verificable en CEP Banxico — preferirla).
+3. `payment_status = 'en_validacion'` (columna text — NO tocar el enum
+   order_status); el proveedor ve la orden pero aún no confirma.
+4. Admin valida → `paid` → escrow normal. Dispersión al liberar:
+   total − comisión − retenciones. El monto del vendedor es PASIVO
+   (recurso de terceros), solo la comisión es ingreso de Remnak.
+5. Fase 2: automatizar con STP/CLABE virtual por orden + webhook (SPEI de
+   MP cuesta como tarjeta y mataría la ventaja del 5%).
+⚠ Validar la redacción del mandato mercantil con abogado ANTES del primer
+SPEI real; capturas de pantalla son falsificables (aceptable solo en piloto).
+
+### Retenciones SAT — régimen de plataformas (programar en S6 con CFDI)
+| Vendedor | ISR | IVA |
+| --- | --- | --- |
+| P. física CON RFC | 1% | 8% |
+| P. física SIN RFC | 20% | 16% |
+| P. moral CON RFC (2026) | 2.5% | 8% |
+| Cuenta extranjera (2026) | según caso | 16% |
+- RFC OBLIGATORIO en onboarding de proveedores (sin RFC pierde ~36%).
+- CSF validada y coincidente con actividad = requisito de verificación KYC.
+- UX: desglose "De $1,000 recibirás ~$X" ANTES de publicar.
+- Umbral $300k/año: retención como pago definitivo (simplificación).
+- Remnak: retener, enterar mensual, constancias (Facturapi), reportar SAT.
+⚠ Validar con contador antes de S6.
+
+### Nuevos requisitos v2.2
+- Fotos de listing: mín 3 / máx 8 (aplicado en código).
+- Detector de imágenes IA para fotos de PRODUCTOS (Sightengine/Hive,
+  EXIF → detector → cola manual; nunca rechazo automático) — S6. Incode ya
+  cubre anti-spoofing de documentos.
+- Sin logos/marcas de agua en fotos (excepción: operadores de maquinaria
+  con sello de identidad validada).
+- Moderación de IMÁGENES en chat con OCR (teléfonos/direcciones embebidos)
+  con la misma escalación 1/2/3 — S5.
+- ARCO completo (no solo queja): formulario único `/legal/arco` (A/R/C/O),
+  respuesta ≤20 días hábiles, cancelación = soft delete + anonimización
+  30 días, oposición = `marketing_opt_out` (requiere migración aprobada),
+  modal de aviso pre-registro + links en footer.
+- Relevancia (S5): rating/reseñas verificadas/cumplimiento (alto), boost
+  publicidad y KYC (medio), frescura/cercanía (bajo). Regla de oro: el
+  dinero impulsa, la calidad decide (rating bajo = techo).
+- Módulo Instalación (contratistas) — cotización mínima viable, S6, 12%.
 
 ## MÓDULO DE FLETEROS — Matching por capacidad de carga (ADICIÓN REQUERIDA)
 
@@ -109,9 +183,36 @@ estado legacy).
 - GRANT INSERT/UPDATE/DELETE a authenticated (las policies RLS filtran
   filas pero no otorgan privilegios; sin esto, 42501).
 
+## ROADMAP (ajustado a guía v2.2, desde el estado real)
+
+- **S4-repair (2026-07-29, esta pasada)**: comisiones v2.2 en código+copy+
+  docs · escrow 72h · fotos 3–8 · cableado de viajes (unidad × cantidad).
+- **S4-core (siguiente)**: retomar Sprint 3 evolucionado — órdenes
+  (crear→confirmar→entregar→recibir) con tarjeta = **MP Checkout SANDBOX**
+  (redirect + webhook firma/idempotencia) y **SPEI manual** (flujo arriba);
+  verificar/crear cron pg_cron de escrow 72h; chat regulado texto
+  (lib/moderation.ts WIP); reviews; notificaciones in-app; **Resend**
+  transaccional (dominio verificado; falta RESEND_API_KEY en .env.local);
+  asignación de fletero a la orden + sección de viajes con liquidación
+  (flete − 10%). En paralelo (usuario): SAS en tuempresa.gob.mx.
+- **S5**: panel admin (validación SPEI, verificación manual, moderación,
+  disputas), OCR imágenes chat, relevancia v1, mobile bottom nav, legal
+  (/terminos, /legal/arco, modal pre-registro, migración marketing_opt_out).
+- **S6 (requiere SAS)**: KYC Incode + CSF + detector IA, CFDI Facturapi +
+  retenciones + constancias, MP producción, Stripe Connect split,
+  Vitest/Playwright + CI, módulo Instalación (cotización, 12%), destacados
+  $250 + PRO (Fase 2).
+- **Pendientes del usuario**: correr migración `freight_unit_dimensions.sql`
+  (si no se ha corrido) · pegar RESEND_API_KEY · SAS · contador (retenciones)
+  · confirmar cron escrow (`select jobname from cron.job;`).
+
 ## Documentos fuente
-- `guidemvp/Remnak_MVP_Guide_v2.docx` — guía MVP v2 (roadmap, pagos, KPIs).
-  Ojo: su "estado actual" describe el código perdido; NO refleja el repo.
+- `guidemvp/Remnak_MVP_Guide_v2.2.docx` — **VIGENTE** (comisiones por
+  método, SPEI, retenciones, requisitos v2.1/2.2). Ojo: su tabla de estado
+  llegó desactualizada en dos puntos — buckets de Storage (ya creados y
+  verificados) y módulo de fleteros (F1–F5 ya completo).
+- `guidemvp/Remnak_MVP_Guide_v2.docx` — superada por v2.2 en comisiones.
+  Su "estado actual" describe el código perdido; NO refleja el repo.
 - `guidemvp/Remnak_Modulo_Fleteros.docx` — spec del matching de fleteros.
 - `design/referencias/` — logo e ícono oficiales.
 - Plan de sprints aprobado: reconciliación guía↔código (2026-07-24).

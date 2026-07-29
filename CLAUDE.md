@@ -21,9 +21,15 @@ Marketplace web de materiales de construcción (sobrantes, defectuosos,
 liquidaciones, RCD), maquinaria (venta y renta por día), profesionales de
 obra y logística/fletes. Campeche y Mérida, MX. Escrow, CFDI 4.0, chat
 regulado anti-fuga.
-COMISIÓN (ratificada 2026-07-24, guía MVP v2): 8% estándar sobre subtotal
-sin IVA; 5% mayoreo si subtotal > $10,000 MXN. Configurable (A/B 10/12/15%
-en piloto). orders.commission_pct guarda el % aplicado por orden.
+COMISIÓN (ratificada 2026-07-29, guía MVP v2.2 — POR MÉTODO DE PAGO):
+- Estándar: 10% tarjeta · 5% SPEI. Mayoreo (subtotal > $10,000): 8% · 4%.
+- Regla: tarjeta = SPEI + 5 pts (la diferencia es el costo del procesador;
+  margen neto Remnak ~5% en ambos). OXXO ELIMINADO.
+- Flete: 10% sobre precio del flete (se cobra al fletero asociado).
+- Instalación (módulo S6): 12%.
+Configurable (A/B §7.1: pares 8/4, 10/5, 12/6). Fase 3 sube a 12/7 con
+aviso 90 días + grandfathering. orders.commission_pct guarda el % aplicado.
+Fuente: lib/marketplace/money.ts (COMMISSION_PCT).
 
 ## ROLES REALES (enum user_role — verificado)
 cliente | proveedor | profesional | logistica | admin
@@ -54,7 +60,8 @@ cliente | proveedor | profesional | logistica | admin
 Next.js 14 App Router (NO 15) · TypeScript estricto · Tailwind 3 ·
 shadcn/ui (-d) · Supabase (DB+Auth+Storage+Realtime+pg_cron) ·
 TanStack Query · react-hook-form + zod · framer-motion · Sonner ·
-Stripe Connect (escrow) · Mercado Pago (OXXO/SPEI) · Resend ·
+Stripe Connect (escrow, intl) · Mercado Pago Checkout (tarjeta, redirect) ·
+SPEI directo a CLABE (validación manual en piloto; OXXO ELIMINADO) · Resend ·
 Facturapi (CFDI 4.0) · Google Maps · pnpm · Vercel.
 Supabase CLI instalado como devDependency: usar `pnpm supabase ...`.
 
@@ -94,9 +101,12 @@ El escrow NO es un status de orden. Vive en columnas de orders:
 escrow_release_due (timestamptz), escrow_released (bool),
 escrow_released_at. El status avanza paid→confirmed→in_transit→
 delivered→completed mientras el escrow se gestiona en paralelo:
-al pagar se fija escrow_release_due = now()+7d; se libera al confirmar
-recepción (delivery_confirmed) o al vencer release_due sin disputa;
-una disputa pone escrow_release_due = null (congela).
+al pagar se fija escrow_release_due = now()+72h (ratificado 2026-07-29,
+guía v2.2); se libera al confirmar recepción (delivery_confirmed) o al
+vencer release_due sin disputa; una disputa pone escrow_release_due =
+null (CONGELA hasta resolverse). La guía v2.2 afirma que existe un cron
+pg_cron para la liberación automática — verificar en DB
+(select jobname from cron.job) antes de confiar en él.
 
 ### orders — campos clave ya modelados
 commission_mxn + commission_pct, iva_mxn (IVA por orden), total_mxn,

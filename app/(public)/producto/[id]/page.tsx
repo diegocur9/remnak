@@ -194,8 +194,9 @@ export default async function ProductoPage({
                 Tu dinero está protegido
               </div>
               <div className="text-[12.5px] leading-[1.5] text-[#6B6259]">
-                Retenemos el pago 7 días. Se libera {escrowReceiver} solo cuando
-                confirmes {escrowConfirm}.
+                Retenemos el pago en escrow. Se libera {escrowReceiver} cuando
+                confirmes {escrowConfirm} (o a las 72 h sin disputa); un
+                problema lo congela hasta resolverse.
               </div>
             </div>
           </div>

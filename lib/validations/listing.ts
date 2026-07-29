@@ -17,8 +17,10 @@ export const LISTING_CONDITIONS = ["nuevo", "sobrante", "defectuoso"] as const;
 /** Subasta queda post-piloto: el formulario solo ofrece fijo y renta. */
 export const LISTING_PRICE_TYPES = ["fijo", "renta_diaria"] as const;
 
+// Guía v2.2 §4.2 (confirmado): mínimo 3, máximo 8 — maquinaria de alto
+// valor usa los 8 ángulos; materiales con 3 basta.
 export const MIN_PHOTOS = 3;
-export const MAX_PHOTOS = 5;
+export const MAX_PHOTOS = 8;
 
 export const listingSchema = z
   .object({

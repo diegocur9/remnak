@@ -70,7 +70,7 @@ export default async function HomePage() {
               </span>
               <span className="inline-flex items-center gap-2 text-[13.5px] font-semibold text-[#4A423B]">
                 <ArrowRight className="h-[17px] w-[17px] text-[#9A6B0E]" strokeWidth={2.1} />
-                Comisión 12%
+                Comisión desde 5%
               </span>
             </div>
           </div>
@@ -204,7 +204,7 @@ const STEPS = [
   {
     icon: ShieldCheck,
     title: "Tu pago entra a escrow",
-    body: "Retenemos el monto 7 días. El proveedor lo ve, pero no lo cobra aún.",
+    body: "Retenemos el pago en escrow. El proveedor lo ve, pero no lo cobra aún.",
     done: false,
   },
   {
@@ -216,7 +216,7 @@ const STEPS = [
   {
     icon: Check,
     title: "Liberamos al proveedor",
-    body: "Comisión 12% transparente y CFDI 4.0 emitido automáticamente.",
+    body: "Comisión transparente (10% tarjeta · 5% SPEI) y CFDI 4.0 automático.",
     done: true,
   },
 ] as const;
