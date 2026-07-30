@@ -194,3 +194,7 @@ jamás en cliente.
 ## Flujo de trabajo
 Un feature por sesión. Plan si toca >3 archivos. pnpm build limpio
 antes de cerrar. Commit + push al cerrar cada tarea.
+⚠ NUNCA correr `pnpm build` con `pnpm dev` activo: comparten .next y se
+corrompe (páginas 500 o clics muertos por chunks rotos). Detener dev →
+build → relanzar dev. Si pasa: matar proceso en :3000, borrar .next,
+`pnpm dev` de nuevo y hard-refresh (Ctrl+Shift+R).
