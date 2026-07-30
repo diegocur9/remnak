@@ -36,20 +36,4 @@ export const STEP_NAMES = [
   "Completado",
 ];
 
-export interface ClientOrderSeed {
-  id: string;
-  item: string;
-  seller: string;
-  total: number;
-  step: number; // 1..5
-  escrowDays: number;
-}
-
-/** Muestra visual hasta conectar órdenes reales (sprint de órdenes). */
-export const CLIENT_ORDERS: ClientOrderSeed[] = [
-  { id: "#RMN-2415", item: "Cemento CPC 30R — 38 sacos", seller: "Materiales del Mayab", total: 4082.4, step: 3, escrowDays: 5 },
-  { id: "#RMN-2402", item: "Minicargador Bobcat S70 · renta 3 días", seller: "Rentas OBRA MX", total: 9918, step: 5, escrowDays: 0 },
-  { id: "#RMN-2381", item: "Block hueco 15×20×40 — 600 pzas", seller: "Bloquera San José", total: 7018, step: 5, escrowDays: 0 },
-];
-
 export { formatMXN };

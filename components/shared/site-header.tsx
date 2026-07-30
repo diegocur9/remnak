@@ -2,9 +2,11 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 
 import { Logo } from "@/components/shared/logo";
+import { NotificationsBell } from "@/components/shared/notifications-bell";
 import { SearchBar } from "@/components/shared/search-bar";
 import { UserMenu } from "@/components/shared/user-menu";
 import { getSessionProfile, hasRole } from "@/lib/auth/profile";
+import { fetchNotifications } from "@/lib/marketplace/orders";
 import { homeForProfile, isProviderSide } from "@/lib/auth/routes";
 
 /** Botón "Vender / Publicar": fondo ink, ícono naranja (estilo design file). */
@@ -23,6 +25,9 @@ function InkCta({ href, label }: { href: string; label: string }) {
 export async function SiteHeader() {
   const { profile } = await getSessionProfile();
   const provider = isProviderSide(profile);
+  const notifications = profile
+    ? await fetchNotifications(10)
+    : { items: [], unread: 0 };
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-[#EAE3DA] bg-canvas/[0.86] backdrop-blur-md">
@@ -41,6 +46,11 @@ export async function SiteHeader() {
                   <InkCta href="/panel/publicar" label="Publicar" />
                 </span>
               )}
+              <NotificationsBell
+                items={notifications.items}
+                unread={notifications.unread}
+                isProvider={provider}
+              />
               <UserMenu
                 fullName={profile.full_name}
                 home={homeForProfile(profile)}

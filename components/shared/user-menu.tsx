@@ -2,7 +2,14 @@
 
 import Link from "next/link";
 import { useTransition } from "react";
-import { LayoutDashboard, LogOut, ShoppingBag, Truck, User } from "lucide-react";
+import {
+  LayoutDashboard,
+  LogOut,
+  Route,
+  ShoppingBag,
+  Truck,
+  User,
+} from "lucide-react";
 
 import { logoutAction } from "@/app/(auth)/actions";
 import { Avatar, initialsFromName } from "@/components/ui/avatar";
@@ -59,12 +66,20 @@ export function UserMenu({
           </Link>
         </DropdownMenuItem>
         {isLogistica && (
-          <DropdownMenuItem asChild>
-            <Link href="/logistica/vehiculos">
-              <Truck className="text-texto-suave" />
-              Mis vehículos
-            </Link>
-          </DropdownMenuItem>
+          <>
+            <DropdownMenuItem asChild>
+              <Link href="/logistica/vehiculos">
+                <Truck className="text-texto-suave" />
+                Mis vehículos
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/logistica/viajes">
+                <Route className="text-texto-suave" />
+                Mis viajes
+              </Link>
+            </DropdownMenuItem>
+          </>
         )}
         <DropdownMenuItem asChild>
           <Link href={`${home}`}>

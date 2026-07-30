@@ -9,30 +9,10 @@ import { toggleFavoriteAction } from "@/app/(public)/producto/actions";
 import type { ListingActionKind } from "@/lib/marketplace/catalog";
 import { cn } from "@/lib/utils";
 
-const PENDING_MESSAGE: Record<
-  ListingActionKind,
-  { title: string; description: string }
-> = {
-  comprar: {
-    title: "Checkout con escrow",
-    description: "El flujo de pago en escrow llega en la próxima iteración.",
-  },
-  rentar: {
-    title: "Renta con escrow",
-    description: "El flujo de renta con escrow llega en la próxima iteración.",
-  },
-  ofertar: {
-    title: "Subasta",
-    description: "Las pujas en tiempo real llegan en la próxima iteración.",
-  },
-  contratar: {
-    title: "Contratación",
-    description: "La contratación de profesionales llega en la próxima iteración.",
-  },
-  flete: {
-    title: "Solicitud de flete",
-    description: "La solicitud de fletes llega en la próxima iteración.",
-  },
+// Subasta queda post-piloto; el resto de los CTA crean orden real.
+const AUCTION_MESSAGE = {
+  title: "Subasta",
+  description: "Las pujas en tiempo real llegan después del piloto.",
 };
 
 export function ProductPurchasePanel({
@@ -127,8 +107,17 @@ export function ProductPurchasePanel({
       <button
         type="button"
         onClick={() => {
-          const m = PENDING_MESSAGE[ctaKind];
-          toast(m.title, { description: m.description });
+          if (ctaKind === "ofertar") {
+            toast(AUCTION_MESSAGE.title, {
+              description: AUCTION_MESSAGE.description,
+            });
+            return;
+          }
+          if (!isAuthed) {
+            router.push(`/login?redirect=/producto/${listingId}/ordenar`);
+            return;
+          }
+          router.push(`/producto/${listingId}/ordenar?qty=${qty}`);
         }}
         className="mb-2.5 h-[50px] w-full rounded-xl bg-brand text-base font-extrabold text-white shadow-[0_6px_16px_rgba(242,107,44,.32)] transition-colors hover:bg-[#E0571B]"
       >

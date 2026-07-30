@@ -11,8 +11,12 @@ import {
 } from "lucide-react";
 
 import { ListingRowActions } from "@/components/marketplace/listing-row-actions";
-import { LISTING_STATUS_META } from "@/lib/marketplace/dashboard";
+import {
+  LISTING_STATUS_META,
+  ORDER_STATUS_META,
+} from "@/lib/marketplace/dashboard";
 import { fetchMyListings } from "@/lib/marketplace/queries";
+import { fetchSellerOrders, orderRef } from "@/lib/marketplace/orders";
 import { getSessionProfile } from "@/lib/auth/profile";
 import { formatMXN } from "@/lib/utils";
 
@@ -24,9 +28,10 @@ function initials(name: string | null): string {
 }
 
 export default async function PanelPage() {
-  const [{ profile }, listings] = await Promise.all([
+  const [{ profile }, listings, orders] = await Promise.all([
     getSessionProfile(),
     fetchMyListings(),
+    fetchSellerOrders(),
   ]);
   const negocio = profile?.full_name ?? "Tu negocio";
   const verificado = profile?.verification_status === "verified";
@@ -36,13 +41,29 @@ export default async function PanelPage() {
   const totalSaves = listings.reduce((s, l) => s + (l.saves_count ?? 0), 0);
   const activos = listings.filter((l) => l.status === "active").length;
 
-  // Ventas/escrow llegan con el flujo de órdenes (Sprint 3): hoy valores reales en cero.
+  // KPIs reales desde órdenes.
+  const days30 = Date.now() - 30 * 24 * 3600 * 1000;
+  const ventas30 = orders
+    .filter(
+      (o) =>
+        o.status === "completed" &&
+        o.escrow_released &&
+        new Date(o.created_at ?? 0).getTime() >= days30
+    )
+    .reduce((s, o) => s + (o.subtotal_mxn - o.commission_mxn), 0);
+  const porAtender = orders.filter((o) =>
+    ["paid", "confirmed", "in_transit"].includes(o.status)
+  );
+
   const kpis = [
     {
       label: "Ventas · 30 días",
-      value: formatMXN(0),
-      delta: "aún sin órdenes",
-      deltaColor: "#8B8178",
+      value: formatMXN(ventas30),
+      delta:
+        porAtender.length > 0
+          ? `${porAtender.length} por atender`
+          : "neto tras comisión",
+      deltaColor: porAtender.length > 0 ? "#9A6B0E" : "#8B8178",
       icon: TrendingUp,
       iconBg: "#FBEADF",
       iconColor: "#F26B2C",
@@ -248,10 +269,48 @@ export default async function PanelPage() {
             <h2 className="mb-3 font-display text-[17px] text-ink">
               Órdenes por atender
             </h2>
-            <p className="text-[13px] leading-relaxed text-texto-suave">
-              Sin órdenes todavía. Cuando un comprador aparte tu material, la
-              orden aparecerá aquí para prepararla y coordinarla.
-            </p>
+            {orders.length === 0 ? (
+              <p className="text-[13px] leading-relaxed text-texto-suave">
+                Sin órdenes todavía. Cuando un comprador aparte tu material, la
+                orden aparecerá aquí para prepararla y coordinarla.
+              </p>
+            ) : (
+              <div className="flex flex-col gap-3.5">
+                {orders.slice(0, 5).map((o) => {
+                  const m = ORDER_STATUS_META[o.status] ?? { label: o.status, color: "#6B6259", bg: "#F1ECE5" };
+                  return (
+                    <Link
+                      key={o.id}
+                      href={`/panel/ordenes/${o.id}`}
+                      className="flex flex-col gap-1.5 border-b border-[#F6F1EA] pb-3.5 last:border-b-0 last:pb-0"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono text-xs text-[#A1968B]">
+                          {orderRef(o.id)}
+                        </span>
+                        <span
+                          className="inline-flex rounded-[7px] px-[9px] py-[3px] text-[11px] font-bold"
+                          style={{ color: m.color, background: m.bg }}
+                        >
+                          {m.label}
+                        </span>
+                      </div>
+                      <div className="truncate text-[13.5px] font-bold text-ink">
+                        {o.listing?.title ?? "Anuncio"}
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-[#8B8178]">
+                          {o.buyer?.full_name ?? "Comprador"}
+                        </span>
+                        <span className="font-mono text-[13.5px] font-bold tabular-nums text-ink">
+                          {formatMXN(o.total_mxn)}
+                        </span>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           <div className="rounded-[18px] bg-night p-5 text-[#F3ECE3]">
