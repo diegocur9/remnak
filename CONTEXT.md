@@ -202,9 +202,16 @@ estado legacy).
   retenciones + constancias, MP producción, Stripe Connect split,
   Vitest/Playwright + CI, módulo Instalación (cotización, 12%), destacados
   $250 + PRO (Fase 2).
-- **Pendientes del usuario**: correr migración `freight_unit_dimensions.sql`
-  (si no se ha corrido) · pegar RESEND_API_KEY · SAS · contador (retenciones)
-  · confirmar cron escrow (`select jobname from cron.job;`).
+- **Confirmado 2026-07-30**: migración `freight_unit_dimensions.sql`
+  aplicada (viajes E2E: block 6,000 kg → redilas "2 viajes ≈ $1,300";
+  RCD 18 m³ → volquete "3 viajes" por volumen; varilla 6 m → 1 viaje) ·
+  RESEND_API_KEY en .env.local (key restringida a solo-envío, válida) ·
+  **cron pg_cron VERIFICADO en DB**: `release-escrow` y
+  `delete-expired-messages` existen (la guía decía verdad) — revisar su
+  SQL interno en S4-core para confirmar que respeta el congelamiento por
+  disputa antes de confiarle liberaciones reales.
+- **Pendientes del usuario**: SAS en tuempresa.gob.mx · contador
+  (retenciones §3 antes de S6).
 
 ## Documentos fuente
 - `guidemvp/Remnak_MVP_Guide_v2.2.docx` — **VIGENTE** (comisiones por
