@@ -11,6 +11,7 @@ export const PROTECTED_PREFIXES = [
   CLIENTE_HOME,
   PROVEEDOR_HOME,
   "/logistica",
+  "/perfil",
   "/admin",
 ];
 

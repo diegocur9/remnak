@@ -56,6 +56,7 @@ export async function SiteHeader() {
                 home={homeForProfile(profile)}
                 isProvider={provider}
                 isLogistica={hasRole(profile, "logistica")}
+                avatarUrl={profile.avatar_url}
               />
             </>
           ) : (

@@ -27,6 +27,7 @@ interface UserMenuProps {
   home: string;
   isProvider: boolean;
   isLogistica?: boolean;
+  avatarUrl?: string | null;
 }
 
 export function UserMenu({
@@ -34,6 +35,7 @@ export function UserMenu({
   home,
   isProvider,
   isLogistica = false,
+  avatarUrl = null,
 }: UserMenuProps) {
   const [isPending, startTransition] = useTransition();
 
@@ -43,7 +45,7 @@ export function UserMenu({
         className="flex h-11 w-11 items-center justify-center rounded-full ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         aria-label="Abrir menú de cuenta"
       >
-        <Avatar>{initialsFromName(fullName)}</Avatar>
+        <Avatar src={avatarUrl}>{initialsFromName(fullName)}</Avatar>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel className="flex flex-col gap-0.5">
@@ -82,7 +84,7 @@ export function UserMenu({
           </>
         )}
         <DropdownMenuItem asChild>
-          <Link href={`${home}`}>
+          <Link href="/perfil">
             <User className="text-texto-suave" />
             Perfil
           </Link>

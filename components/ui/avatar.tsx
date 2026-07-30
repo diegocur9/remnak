@@ -1,15 +1,13 @@
 import * as React from "react";
+import Image from "next/image";
 
 import { cn } from "@/lib/utils";
 
-/**
- * Avatar mínimo: muestra iniciales sobre el color de marca.
- * (Sin imagen aún; cuando exista avatar_url se añade un <Image/> encima.)
- */
+/** Avatar: foto si hay `src`; si no, iniciales sobre el color de marca. */
 const Avatar = React.forwardRef<
   HTMLSpanElement,
-  React.HTMLAttributes<HTMLSpanElement>
->(({ className, ...props }, ref) => (
+  React.HTMLAttributes<HTMLSpanElement> & { src?: string | null }
+>(({ className, src, children, ...props }, ref) => (
   <span
     ref={ref}
     className={cn(
@@ -17,7 +15,20 @@ const Avatar = React.forwardRef<
       className
     )}
     {...props}
-  />
+  >
+    {src ? (
+      <Image
+        src={src}
+        alt=""
+        fill
+        sizes="40px"
+        className="object-cover"
+        unoptimized={!src.includes(".supabase.co/storage/")}
+      />
+    ) : (
+      children
+    )}
+  </span>
 ));
 Avatar.displayName = "Avatar";
 
