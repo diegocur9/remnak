@@ -13,7 +13,8 @@ o al adoptar una spec nueva.
 | Dashboards /panel y /cuenta · publicar con fotos · favoritos | ✅ contra Supabase real |
 | Seed dev (`scripts/seed.mjs`): 6 proveedores + 9 anuncios | ✅ |
 | DB asegurada: GRANTs service_role + trigger anti auto-verificación | ✅ (`scripts/check-db-security.mjs` 4/4) |
-| Sprint 3 — órdenes sin pago + chat regulado + reviews | ⏸️ EN PAUSA (money.ts/orders.ts/moderation.ts en working tree, compilan) |
+| Flujo de órdenes completo SIN pagos (S4-core, 2026-07-30): checkout con fletero rankeado, ciclo pending→completed, escrow 72h, chat regulado realtime + strikes, reviews (trigger recalcula rating), notificaciones + campanita, viajes del fletero con liquidación −10% | ✅ E2E 10/10 (orden demo en DB) |
+| Pagos reales (MP sandbox + SPEI manual) | 🔒 DIFERIDO hasta SAS/llaves — se montan sobre simulatePaymentAction sin cambiar el flujo. Correos Resend: key lista, envío pendiente de codificar |
 | **Módulo fleteros (matching por capacidad)** | ✅ Fases 1–5 completas (falta: asignación real de fletero al crear orden → depende de Sprint 3; columna de largo en listings → decisión pendiente) |
 | Storage: buckets `listing-photos` + `verification-docs` + políticas | ✅ verificado 7/7 (no existían; creados 2026-07-25) |
 | Pagos Stripe/MP + CFDI (Facturapi) + Resend | 🔒 Sprint 4b (sandbox; bloqueado hasta SAS) |
